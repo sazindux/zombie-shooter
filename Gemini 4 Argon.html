@@ -1,0 +1,3116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>METRO OUTBREAK // 3D Subway Zombie Survival FPS</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,700&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
+
+    :root {
+      --hud-cyan: #22d3ee;
+      --hud-amber: #f59e0b;
+      --hud-red: #ef4444;
+      --hud-green: #10b981;
+      --panel-bg: rgba(9, 13, 20, 0.82);
+      --panel-border: rgba(34, 211, 238, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #05070b;
+      font-family: 'Chakra Petch', sans-serif;
+      color: #e2e8f0;
+    }
+
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    #game-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      z-index: 1;
+    }
+
+    /* Tactical HUD Panels */
+    .tac-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.65), inset 0 0 12px rgba(34, 211, 238, 0.05);
+      backdrop-filter: blur(4px);
+    }
+
+    .tac-corner {
+      position: relative;
+    }
+    .tac-corner::before,
+    .tac-corner::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-color: var(--hud-cyan);
+      pointer-events: none;
+    }
+    .tac-corner::before {
+      top: -1px;
+      left: -1px;
+      border-top: 2px solid var(--hud-cyan);
+      border-left: 2px solid var(--hud-cyan);
+    }
+    .tac-corner::after {
+      bottom: -1px;
+      right: -1px;
+      border-bottom: 2px solid var(--hud-cyan);
+      border-right: 2px solid var(--hud-cyan);
+    }
+
+    /* Scanline Overlay */
+    .scanlines {
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0, 0, 0, 0.16) 50%,
+        rgba(0, 0, 0, 0.16)
+      );
+      background-size: 100% 4px;
+    }
+
+    /* Damage & Effect Vignettes */
+    #damage-vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 15;
+      opacity: 0;
+      transition: opacity 0.12s ease-out;
+      background: radial-gradient(circle, rgba(0,0,0,0) 42%, rgba(220, 38, 38, 0.68) 100%);
+    }
+
+    #heal-vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 15;
+      opacity: 0;
+      transition: opacity 0.25s ease-out;
+      background: radial-gradient(circle, rgba(0,0,0,0) 55%, rgba(16, 185, 129, 0.4) 100%);
+    }
+
+    /* Dynamic Crosshair */
+    #crosshair-wrap {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 20;
+      width: 60px;
+      height: 60px;
+    }
+
+    .ch-line {
+      position: absolute;
+      background: rgba(56, 239, 255, 0.92);
+      box-shadow: 0 0 6px rgba(34, 211, 238, 0.85);
+      transition: transform 0.05s ease-out, background-color 0.1s;
+    }
+    .ch-top { width: 2px; height: 9px; left: 29px; top: 12px; }
+    .ch-bottom { width: 2px; height: 9px; left: 29px; bottom: 12px; }
+    .ch-left { height: 2px; width: 9px; top: 29px; left: 12px; }
+    .ch-right { height: 2px; width: 9px; top: 29px; right: 12px; }
+    .ch-dot {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 999px;
+      background: #fff;
+      top: 28px;
+      left: 28px;
+      box-shadow: 0 0 6px #22d3ee;
+    }
+
+    /* Hitmarker */
+    #hitmarker {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 28px;
+      height: 28px;
+      transform: translate(-50%, -50%) scale(0.8);
+      pointer-events: none;
+      z-index: 21;
+      opacity: 0;
+      transition: opacity 0.06s ease-out, transform 0.06s ease-out;
+    }
+    .hm-line {
+      position: absolute;
+      width: 10px;
+      height: 2px;
+      background: #ffffff;
+      box-shadow: 0 0 6px rgba(255,255,255,0.9);
+    }
+    .hm-1 { top: 5px; left: 2px; transform: rotate(45deg); }
+    .hm-2 { top: 5px; right: 2px; transform: rotate(-45deg); }
+    .hm-3 { bottom: 5px; left: 2px; transform: rotate(-45deg); }
+    .hm-4 { bottom: 5px; right: 2px; transform: rotate(45deg); }
+
+    @keyframes pulseDanger {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    .pulse-danger {
+      animation: pulseDanger 0.9s infinite ease-in-out;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #090d14; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 select-none overflow-hidden">
+
+  <!-- 3D WebGL Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Screen Effects -->
+  <div id="damage-vignette"></div>
+  <div id="heal-vignette"></div>
+  <div class="fixed inset-0 pointer-events-none scanlines z-10 opacity-40"></div>
+
+  <!-- ================= HUD LAYER ================= -->
+  <div id="hud-layer" class="fixed inset-0 pointer-events-none z-20 hidden">
+
+    <!-- Top Tactical Bar -->
+    <div class="absolute top-3 left-4 right-4 flex items-start justify-between gap-4">
+      
+      <!-- Station & Wave Info -->
+      <div class="tac-panel tac-corner px-4 py-2.5 rounded-sm min-w-[280px]">
+        <div class="flex items-center justify-between gap-3 border-b border-cyan-500/20 pb-1 mb-1.5">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+            <span id="hud-station-num" class="text-xs font-mono-tech tracking-widest text-cyan-400 font-bold">STATION 01 / 05</span>
+          </div>
+          <span id="hud-perf-badge" class="text-[11px] font-mono-tech px-1.5 py-0.5 rounded bg-slate-900/90 text-emerald-400 border border-emerald-500/30">60 FPS • LOW 4GB</span>
+        </div>
+        <div id="hud-station-name" class="text-lg font-bold tracking-wider uppercase text-white leading-tight">KENSINGTON TERMINAL</div>
+        <div class="flex items-center gap-4 mt-1.5 text-xs font-mono-tech">
+          <div>
+            <span class="text-slate-400">WAVE:</span>
+            <span id="hud-wave" class="text-amber-400 font-bold ml-1">1 / 2</span>
+          </div>
+          <div>
+            <span class="text-slate-400">HOSTILES:</span>
+            <span id="hud-enemies" class="text-rose-400 font-bold ml-1">0</span>
+          </div>
+          <div>
+            <span class="text-slate-400">SCORE:</span>
+            <span id="hud-score" class="text-cyan-300 font-bold ml-1">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Objective Banner & Boss Bar -->
+      <div class="flex flex-col items-center max-w-xl w-full pointer-events-none">
+        <div id="hud-objective-box" class="tac-panel px-5 py-2 rounded-sm border-amber-500/40 text-center w-full max-w-md">
+          <div class="text-[10px] font-mono-tech uppercase tracking-[0.25em] text-cyan-400">CURRENT DIRECTIVE</div>
+          <div id="hud-objective-text" class="text-sm md:text-base font-bold tracking-wide text-amber-300 uppercase mt-0.5">
+            ELIMINATE ALL INFECTED IN THE STATION
+          </div>
+        </div>
+
+        <!-- Boss Health Bar (Hidden unless Boss active) -->
+        <div id="hud-boss-box" class="hidden mt-2 w-full max-w-md tac-panel px-4 py-2 border-rose-500/60 bg-rose-950/40">
+          <div class="flex justify-between items-center text-xs font-mono-tech mb-1">
+            <span id="hud-boss-name" class="text-rose-400 font-bold tracking-wider uppercase">⚠ APEX ABOMINATION</span>
+            <span id="hud-boss-hp-text" class="text-rose-200 font-bold">800 / 800</span>
+          </div>
+          <div class="w-full h-2.5 bg-slate-950 border border-rose-500/40 overflow-hidden">
+            <div id="hud-boss-bar" class="h-full bg-gradient-to-r from-rose-600 to-amber-500 transition-all duration-100" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <!-- Dynamic Wave / Train Alert Toast -->
+        <div id="hud-toast" class="mt-3 px-6 py-2 rounded-sm bg-slate-950/90 border border-cyan-400/60 text-cyan-300 font-bold tracking-widest uppercase text-sm shadow-lg transition-all duration-300 opacity-0 -translate-y-2">
+          WAVE INCOMING
+        </div>
+      </div>
+
+      <!-- Top-Right Tactical Radar & Quick Controls -->
+      <div class="flex flex-col items-end gap-2">
+        <div class="tac-panel tac-corner p-2 rounded-sm flex flex-col items-center">
+          <div class="text-[10px] font-mono-tech text-cyan-400 tracking-widest mb-1 uppercase flex items-center justify-between w-full px-1">
+            <span>BIO-RADAR</span>
+            <span id="hud-radar-status" class="text-emerald-400">ONLINE</span>
+          </div>
+          <canvas id="radar-canvas" width="116" height="116" class="rounded-sm bg-slate-950 border border-cyan-500/30"></canvas>
+        </div>
+        <div class="tac-panel px-2.5 py-1 text-[11px] font-mono-tech text-slate-300 flex gap-3">
+          <span><b class="text-cyan-400">[H]</b> MEDKIT (<span id="hud-medkits" class="text-emerald-400 font-bold">2</span>)</span>
+          <span><b class="text-cyan-400">[ESC/P]</b> PAUSE</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Center Crosshair & Hitmarker -->
+    <div id="crosshair-wrap">
+      <div id="ch-top" class="ch-line ch-top"></div>
+      <div id="ch-bottom" class="ch-line ch-bottom"></div>
+      <div id="ch-left" class="ch-line ch-left"></div>
+      <div id="ch-right" class="ch-line ch-right"></div>
+      <div class="ch-dot"></div>
+    </div>
+
+    <div id="hitmarker">
+      <div class="hm-line hm-1"></div>
+      <div class="hm-line hm-2"></div>
+      <div class="hm-line hm-3"></div>
+      <div class="hm-line hm-4"></div>
+    </div>
+
+    <!-- Center-Bottom Reload & Boarding Indicators -->
+    <div class="absolute left-1/2 -translate-x-1/2 bottom-28 flex flex-col items-center gap-2">
+      <!-- Reload Progress Bar -->
+      <div id="hud-reload-box" class="hidden tac-panel px-4 py-1.5 rounded-sm border-amber-400/50 min-w-[200px]">
+        <div class="flex justify-between text-[11px] font-mono-tech text-amber-300 mb-1">
+          <span>RELOADING WEAPON...</span>
+          <span id="hud-reload-pct">0%</span>
+        </div>
+        <div class="w-full h-1.5 bg-slate-900 overflow-hidden">
+          <div id="hud-reload-bar" class="h-full bg-amber-400 transition-all duration-75" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Low Ammo Prompt -->
+      <div id="hud-ammo-warn" class="hidden px-3 py-1 bg-rose-950/90 border border-rose-500/60 text-rose-300 text-xs font-mono-tech tracking-wider uppercase animate-pulse">
+        PRESS [R] TO RELOAD
+      </div>
+
+      <!-- Train Boarding / Supply Prompt -->
+      <div id="hud-interact-prompt" class="hidden px-5 py-2 bg-emerald-950/90 border-2 border-emerald-400 text-emerald-200 font-bold text-sm tracking-widest uppercase shadow-lg">
+        ▶ WALK INSIDE OPEN TRAIN DOORS TO DEPART ◀
+      </div>
+    </div>
+
+    <!-- Bottom-Left: Player Vitals (Health & Stamina) -->
+    <div class="absolute bottom-4 left-4 tac-panel tac-corner p-4 rounded-sm w-80">
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="text-xs font-mono-tech tracking-widest text-slate-400 uppercase">VITALS // INTEGRITY</span>
+        <div class="flex items-baseline gap-1">
+          <span id="hud-hp-num" class="text-2xl font-bold font-mono-tech text-emerald-400">100</span>
+          <span class="text-xs font-mono-tech text-slate-500">/ 100</span>
+        </div>
+      </div>
+      <!-- Health Bar -->
+      <div class="w-full h-3.5 bg-slate-950 border border-slate-700 p-0.5 mb-3">
+        <div id="hud-hp-bar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-150" style="width: 100%"></div>
+      </div>
+
+      <!-- Stamina Bar -->
+      <div class="flex items-center justify-between text-[11px] font-mono-tech text-slate-400 mb-1">
+        <span>STAMINA // SPRINT [SHIFT]</span>
+        <span id="hud-stamina-num" class="text-cyan-300">100%</span>
+      </div>
+      <div class="w-full h-2 bg-slate-950 border border-slate-800 overflow-hidden">
+        <div id="hud-stamina-bar" class="h-full bg-cyan-400 transition-all duration-75" style="width: 100%"></div>
+      </div>
+    </div>
+
+    <!-- Bottom-Right: Weapon & Ammunition Telemetry -->
+    <div class="absolute bottom-4 right-4 tac-panel tac-corner p-4 rounded-sm w-88">
+      <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-2">
+        <div>
+          <div class="text-[10px] font-mono-tech text-cyan-400 tracking-widest uppercase" id="hud-weapon-type">SUBMACHINE GUN</div>
+          <div class="text-lg font-bold tracking-wider text-white uppercase" id="hud-weapon-name">MP7 TACTICAL SMG</div>
+        </div>
+        <div class="text-right font-mono-tech">
+          <span id="hud-ammo-mag" class="text-3xl font-extrabold text-cyan-300">36</span>
+          <span class="text-slate-500 text-lg mx-0.5">/</span>
+          <span id="hud-ammo-res" class="text-lg text-slate-300 font-semibold">180</span>
+        </div>
+      </div>
+
+      <!-- Weapon Slots 1-4 -->
+      <div class="grid grid-cols-4 gap-1.5 text-[11px] font-mono-tech">
+        <div id="slot-1" class="px-2 py-1 rounded-sm border border-cyan-400 bg-cyan-500/20 text-white text-center">
+          <div class="text-[9px] text-cyan-300">[1]</div>
+          <div class="font-bold truncate">SMG</div>
+        </div>
+        <div id="slot-2" class="px-2 py-1 rounded-sm border border-slate-700 bg-slate-900/70 text-slate-400 text-center">
+          <div class="text-[9px] text-slate-500">[2]</div>
+          <div class="font-bold truncate">SHOTGUN</div>
+        </div>
+        <div id="slot-3" class="px-2 py-1 rounded-sm border border-slate-700 bg-slate-900/70 text-slate-400 text-center">
+          <div class="text-[9px] text-slate-500">[3]</div>
+          <div class="font-bold truncate">RIFLE</div>
+        </div>
+        <div id="slot-4" class="px-2 py-1 rounded-sm border border-slate-700 bg-slate-900/70 text-slate-400 text-center">
+          <div class="text-[9px] text-slate-500">[4]</div>
+          <div class="font-bold truncate">ROCKET</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= MAIN MENU OVERLAY ================= -->
+  <div id="main-menu" class="fixed inset-0 z-30 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs">
+    <div class="tac-panel tac-corner max-w-4xl w-full p-6 md:p-8 rounded-sm border border-cyan-500/40 shadow-2xl">
+      
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-cyan-500/30 pb-4 mb-6 gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-0.5 bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-mono-tech tracking-widest uppercase mb-2">
+            <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+            BIOHAZARD CONTAINMENT BREACH // UNDERGROUND TRANSIT
+          </div>
+          <h1 class="text-3xl md:text-5xl font-extrabold tracking-wider uppercase text-white">
+            METRO <span class="text-cyan-400">OUTBREAK</span>
+          </h1>
+          <p class="text-slate-400 text-sm mt-1">Tactical 3D Underground Subway Zombie Survival FPS • 5 Playable Transit Sectors</p>
+        </div>
+        <div class="tac-panel px-3.5 py-2 border-emerald-500/40 text-right font-mono-tech text-xs">
+          <div class="text-emerald-400 font-bold">4GB RAM OPTIMIZED</div>
+          <div class="text-slate-400">OBJECT POOLING ACTIVE</div>
+          <div class="text-cyan-300">WEBGL LOW-POLY ENGINE</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Mission Config & Graphics Settings -->
+        <div class="md:col-span-7 space-y-4">
+          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-sm">
+            <h2 class="text-sm font-mono-tech uppercase tracking-widest text-cyan-400 mb-3">1. GRAPHICS & PERFORMANCE PRESET</h2>
+            <div class="grid grid-cols-3 gap-2">
+              <button data-gfx="LOW" class="gfx-btn py-2.5 px-3 rounded-sm border border-cyan-400 bg-cyan-500/20 text-white font-bold text-xs font-mono-tech uppercase transition cursor-pointer">
+                LOW (DEFAULT)<br><span class="text-[10px] font-normal text-cyan-200">4GB RAM / iGPU</span>
+              </button>
+              <button data-gfx="MEDIUM" class="gfx-btn py-2.5 px-3 rounded-sm border border-slate-700 bg-slate-950/70 text-slate-300 font-bold text-xs font-mono-tech uppercase transition cursor-pointer hover:border-slate-500">
+                MEDIUM<br><span class="text-[10px] font-normal text-slate-400">Balanced</span>
+              </button>
+              <button data-gfx="HIGH" class="gfx-btn py-2.5 px-3 rounded-sm border border-slate-700 bg-slate-950/70 text-slate-300 font-bold text-xs font-mono-tech uppercase transition cursor-pointer hover:border-slate-500">
+                HIGH<br><span class="text-[10px] font-normal text-slate-400">Max Effects</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-sm space-y-3">
+            <h2 class="text-sm font-mono-tech uppercase tracking-widest text-cyan-400">2. DEPLOYMENT SECTOR & CONTROLS</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-mono-tech text-slate-400 mb-1">STARTING SUBWAY STATION</label>
+                <select id="menu-station-select" class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs font-mono-tech px-3 py-2 rounded-sm focus:border-cyan-400 outline-none">
+                  <option value="0">STATION 01: Kensington Terminal</option>
+                  <option value="1">STATION 02: Union Crossing</option>
+                  <option value="2">STATION 03: Bio-Labs Central (Boss)</option>
+                  <option value="3">STATION 04: Armory Junction</option>
+                  <option value="4">STATION 05: Citadel Extraction (Final)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-mono-tech text-slate-400 mb-1">AIM SENSITIVITY: <span id="sens-val" class="text-cyan-400">1.0</span></label>
+                <input id="sens-slider" type="range" min="0.3" max="2.5" step="0.1" value="1.0" class="w-full accent-cyan-400 cursor-pointer mt-1.5" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Arsenal Preview -->
+          <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-sm">
+            <h2 class="text-sm font-mono-tech uppercase tracking-widest text-cyan-400 mb-2">3. LOADOUT ARSENAL (ALL UNLOCKED)</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono-tech">
+              <div class="p-2 bg-slate-950 border border-slate-800">
+                <div class="text-cyan-400 font-bold">[1] MP7 SMG</div>
+                <div class="text-[11px] text-slate-400">High ROF • 36 Mag</div>
+              </div>
+              <div class="p-2 bg-slate-950 border border-slate-800">
+                <div class="text-amber-400 font-bold">[2] M870 PUMP</div>
+                <div class="text-[11px] text-slate-400">8-Pellet Buckshot</div>
+              </div>
+              <div class="p-2 bg-slate-950 border border-slate-800">
+                <div class="text-emerald-400 font-bold">[3] MK18 RIFLE</div>
+                <div class="text-[11px] text-slate-400">Precision • 1.8x Crit</div>
+              </div>
+              <div class="p-2 bg-slate-950 border border-slate-800">
+                <div class="text-rose-400 font-bold">[4] RPG LAUNCHER</div>
+                <div class="text-[11px] text-slate-400">HE Splash Blast</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Controls Briefing & Start -->
+        <div class="md:col-span-5 flex flex-col justify-between bg-slate-900/90 border border-slate-800 p-4 rounded-sm">
+          <div>
+            <h2 class="text-sm font-mono-tech uppercase tracking-widest text-amber-400 mb-3">OPERATIONAL MANUAL</h2>
+            <ul class="space-y-2 text-xs font-mono-tech text-slate-300">
+              <li class="flex justify-between border-b border-slate-800 pb-1">
+                <span class="text-slate-400">MOVE / STRAFE</span>
+                <span class="text-cyan-300 font-bold">W, A, S, D</span>
+              </li>
+              <li class="flex justify-between border-b border-slate-800 pb-1">
+                <span class="text-slate-400">AIM & FIRE</span>
+                <span class="text-cyan-300 font-bold">MOUSE + LEFT CLICK</span>
+              </li>
+              <li class="flex justify-between border-b border-slate-800 pb-1">
+                <span class="text-slate-400">AIM DOWN SIGHTS</span>
+                <span class="text-cyan-300 font-bold">RIGHT CLICK (HOLD)</span>
+              </li>
+              <li class="flex justify-between border-b border-slate-800 pb-1">
+                <span class="text-slate-400">SPRINT / JUMP</span>
+                <span class="text-cyan-300 font-bold">SHIFT / SPACE</span>
+              </li>
+              <li class="flex justify-between border-b border-slate-800 pb-1">
+                <span class="text-slate-400">RELOAD WEAPON</span>
+                <span class="text-cyan-300 font-bold">R KEY</span>
+              </li>
+              <li class="flex justify-between border-b border-slate-800 pb-1">
+                <span class="text-slate-400">SWITCH WEAPONS</span>
+                <span class="text-cyan-300 font-bold">1, 2, 3, 4 / SCROLL</span>
+              </li>
+              <li class="flex justify-between border-b border-slate-800 pb-1">
+                <span class="text-slate-400">USE FIELD MEDKIT</span>
+                <span class="text-emerald-400 font-bold">H KEY</span>
+              </li>
+            </ul>
+
+            <div class="mt-3 p-2.5 bg-amber-950/30 border border-amber-500/30 text-[11px] text-amber-200 leading-relaxed">
+              <b>TRANSIT PROTOCOL:</b> Clear all enemy waves at each station. Once the platform is secure, the extraction subway train will arrive on the tracks and open its doors. Walk inside the train car to travel to the next station!
+            </div>
+          </div>
+
+          <button id="btn-start-game" class="mt-5 w-full py-4 px-6 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-extrabold text-lg tracking-widest uppercase rounded-sm shadow-lg shadow-cyan-500/25 transition transform active:scale-98 cursor-pointer">
+            ▶ DEPLOY TO SUBWAY SECTOR
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PAUSE MENU OVERLAY ================= -->
+  <div id="pause-menu" class="fixed inset-0 z-30 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
+    <div class="tac-panel tac-corner max-w-md w-full p-6 rounded-sm border border-cyan-500/40">
+      <div class="text-xs font-mono-tech text-cyan-400 tracking-widest uppercase">SYSTEM PAUSED</div>
+      <h2 class="text-2xl font-extrabold tracking-wider uppercase text-white mb-4">TACTICAL PAUSE MENU</h2>
+
+      <div class="space-y-4 mb-6">
+        <div>
+          <label class="block text-xs font-mono-tech text-slate-400 mb-1.5">GRAPHICS QUALITY PRESET</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button data-gfx="LOW" class="gfx-btn py-2 px-2 rounded-sm border border-cyan-400 bg-cyan-500/20 text-white font-bold text-xs font-mono-tech uppercase cursor-pointer">LOW</button>
+            <button data-gfx="MEDIUM" class="gfx-btn py-2 px-2 rounded-sm border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs font-mono-tech uppercase cursor-pointer">MEDIUM</button>
+            <button data-gfx="HIGH" class="gfx-btn py-2 px-2 rounded-sm border border-slate-700 bg-slate-900 text-slate-300 font-bold text-xs font-mono-tech uppercase cursor-pointer">HIGH</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono-tech text-slate-400 mb-1">MOUSE SENSITIVITY: <span id="pause-sens-val" class="text-cyan-400">1.0</span></label>
+          <input id="pause-sens-slider" type="range" min="0.3" max="2.5" step="0.1" value="1.0" class="w-full accent-cyan-400 cursor-pointer" />
+        </div>
+
+        <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 px-3 py-2">
+          <span class="text-xs font-mono-tech text-slate-300">SYNTHESIZED AUDIO FX</span>
+          <button id="btn-toggle-audio" class="px-3 py-1 bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-mono-tech font-bold cursor-pointer">
+            ENABLED
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-2.5">
+        <button id="btn-resume" class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold tracking-widest uppercase text-sm rounded-sm cursor-pointer">
+          ▶ RESUME COMBAT
+        </button>
+        <button id="btn-restart-station" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold tracking-wider uppercase text-xs font-mono-tech rounded-sm border border-slate-600 cursor-pointer">
+          ↻ RESTART CURRENT STATION
+        </button>
+        <button id="btn-quit-menu" class="w-full py-2.5 bg-rose-950/70 hover:bg-rose-900/80 text-rose-300 font-bold tracking-wider uppercase text-xs font-mono-tech rounded-sm border border-rose-500/40 cursor-pointer">
+          ✖ RETURN TO MAIN MENU
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SUBWAY TRAIN TRANSITION OVERLAY ================= -->
+  <div id="train-transition-ui" class="fixed inset-0 z-25 hidden items-center justify-center pointer-events-none p-4">
+    <div class="tac-panel tac-corner max-w-lg w-full p-6 rounded-sm border-2 border-emerald-400/70 bg-slate-950/90 pointer-events-auto shadow-2xl">
+      <div class="flex items-center justify-between border-b border-emerald-500/30 pb-2 mb-3">
+        <span class="text-xs font-mono-tech text-emerald-400 tracking-widest uppercase">● SUBWAY EXPRESS IN TRANSIT</span>
+        <span id="transit-timer" class="text-xs font-mono-tech text-amber-300 font-bold">ARRIVING IN 4.0s</span>
+      </div>
+      <h2 id="transit-title" class="text-2xl font-extrabold uppercase tracking-wider text-white">DEPARTING STATION 01</h2>
+      <p id="transit-subtitle" class="text-sm text-cyan-300 font-mono-tech mt-0.5">NEXT STOP: STATION 02 — UNION CROSSING</p>
+
+      <div class="my-4 p-3 bg-slate-900/90 border border-slate-800 space-y-1.5 text-xs font-mono-tech">
+        <div class="text-emerald-400 font-bold uppercase mb-1">✓ TRANSIT RESUPPLY APPLIED:</div>
+        <div class="flex justify-between text-slate-300"><span>• HULL / HEALTH RESTORED:</span><span class="text-emerald-300 font-bold">+50 HP & +1 MEDKIT</span></div>
+        <div class="flex justify-between text-slate-300"><span>• AMMUNITION RESERVES:</span><span class="text-cyan-300 font-bold">RESTOCKED ALL WEAPONS</span></div>
+        <div class="flex justify-between text-slate-300"><span>• SECTOR CLEAR BONUS:</span><span class="text-amber-300 font-bold">+1,000 PTS</span></div>
+      </div>
+
+      <div id="transit-threat-desc" class="text-xs text-slate-400 leading-relaxed mb-4">
+        Warning: Bio-scans ahead indicate heavier Riot Armored Infected and Sprinter packs on the platform.
+      </div>
+
+      <button id="btn-skip-transit" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs font-mono-tech uppercase tracking-widest rounded-sm cursor-pointer">
+        SKIP TRANSIT — OPEN DOORS NOW ▶
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= GAME OVER / VICTORY OVERLAY ================= -->
+  <div id="end-screen" class="fixed inset-0 z-30 hidden items-center justify-center p-4 bg-slate-950/88 backdrop-blur-sm">
+    <div class="tac-panel tac-corner max-w-lg w-full p-7 rounded-sm border border-cyan-500/40 text-center">
+      <div id="end-badge" class="inline-block px-3 py-1 text-xs font-mono-tech font-bold uppercase tracking-widest bg-rose-500/20 border border-rose-500/50 text-rose-300 mb-2">
+        SIGNAL LOST // OPERATOR DOWN
+      </div>
+      <h2 id="end-title" class="text-4xl font-extrabold uppercase tracking-wider text-white mb-1">MIA IN THE METRO</h2>
+      <p id="end-subtitle" class="text-sm text-slate-400 mb-5">The underground horde overwhelmed your position.</p>
+
+      <div class="grid grid-cols-2 gap-3 text-left font-mono-tech text-xs bg-slate-900/90 border border-slate-800 p-4 rounded-sm mb-6">
+        <div>
+          <div class="text-slate-500">STATION REACHED</div>
+          <div id="end-stat-station" class="text-lg font-bold text-cyan-300">01 / 05</div>
+        </div>
+        <div>
+          <div class="text-slate-500">TOTAL SCORE</div>
+          <div id="end-stat-score" class="text-lg font-bold text-amber-400">0</div>
+        </div>
+        <div>
+          <div class="text-slate-500">INFECTED ELIMINATED</div>
+          <div id="end-stat-kills" class="text-lg font-bold text-emerald-400">0</div>
+        </div>
+        <div>
+          <div class="text-slate-500">HEADSHOT KILLS</div>
+          <div id="end-stat-headshots" class="text-lg font-bold text-rose-400">0</div>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button id="btn-end-retry" class="flex-1 py-3.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold uppercase tracking-widest text-sm rounded-sm cursor-pointer">
+          ↻ REDEPLOY AT STATION
+        </button>
+        <button id="btn-end-menu" class="py-3.5 px-5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold uppercase tracking-wider text-xs font-mono-tech rounded-sm border border-slate-600 cursor-pointer">
+          MAIN MENU
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= GAME ENGINE SCRIPT ================= -->
+  <script>
+  (function() {
+    'use strict';
+
+    // =========================================================================
+    // 1. CONFIGURATION, STATIONS & WEAPON DEFINITIONS
+    // =========================================================================
+    const GRAPHICS_PRESETS = {
+      LOW: {
+        name: 'LOW 4GB',
+        pixelRatio: 1.0,
+        maxZombiesActive: 14,
+        particleMultiplier: 0.45,
+        pointLightsEnabled: false,
+        fogDensity: 0.024,
+        farClip: 95
+      },
+      MEDIUM: {
+        name: 'MEDIUM',
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 1.35),
+        maxZombiesActive: 20,
+        particleMultiplier: 0.85,
+        pointLightsEnabled: true,
+        fogDensity: 0.021,
+        farClip: 115
+      },
+      HIGH: {
+        name: 'HIGH',
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 1.75),
+        maxZombiesActive: 26,
+        particleMultiplier: 1.25,
+        pointLightsEnabled: true,
+        fogDensity: 0.018,
+        farClip: 135
+      }
+    };
+
+    const STATIONS = [
+      {
+        id: 1,
+        name: 'KENSINGTON TERMINAL',
+        themeColor: 0x0ea5e9,
+        fogColor: 0x060b12,
+        lightColor: 0xdbeafe,
+        emergColor: 0xf59e0b,
+        briefing: 'Initial outbreak zone. Expect standard Infected commuters and early Sprinter mutations.',
+        waves: [
+          { normal: 7, runner: 2, heavy: 0, boss: 0, spawnInterval: 1.35 },
+          { normal: 9, runner: 4, heavy: 1, boss: 0, spawnInterval: 1.15 }
+        ]
+      },
+      {
+        id: 2,
+        name: 'UNION CROSSING',
+        themeColor: 0xf59e0b,
+        fogColor: 0x0c0a06,
+        lightColor: 0xfef3c7,
+        emergColor: 0xef4444,
+        briefing: 'Evacuation checkpoint overrun. Riot-armored security forces have turned.',
+        waves: [
+          { normal: 9, runner: 5, heavy: 2, boss: 0, spawnInterval: 1.1 },
+          { normal: 11, runner: 6, heavy: 3, boss: 0, spawnInterval: 0.95 }
+        ]
+      },
+      {
+        id: 3,
+        name: 'BIO-LABS CENTRAL',
+        themeColor: 0x10b981,
+        fogColor: 0x040d0a,
+        lightColor: 0xd1fae5,
+        emergColor: 0x10b981,
+        briefing: 'Underground research conduit. High-threat Apex Abomination detected on Wave 3.',
+        waves: [
+          { normal: 10, runner: 6, heavy: 2, boss: 0, spawnInterval: 1.0 },
+          { normal: 10, runner: 8, heavy: 3, boss: 0, spawnInterval: 0.9 },
+          { normal: 6, runner: 5, heavy: 2, boss: 1, spawnInterval: 1.05 }
+        ]
+      },
+      {
+        id: 4,
+        name: 'ARMORY JUNCTION',
+        themeColor: 0xef4444,
+        fogColor: 0x110608,
+        lightColor: 0xfee2e2,
+        emergColor: 0xef4444,
+        briefing: 'Military transit depot with severe power fluctuations. Heavy Armored packs inbound.',
+        waves: [
+          { normal: 11, runner: 8, heavy: 4, boss: 0, spawnInterval: 0.9 },
+          { normal: 12, runner: 9, heavy: 5, boss: 0, spawnInterval: 0.85 },
+          { normal: 10, runner: 8, heavy: 4, boss: 1, spawnInterval: 0.9 }
+        ]
+      },
+      {
+        id: 5,
+        name: 'CITADEL EXTRACTION',
+        themeColor: 0x38bdf8,
+        fogColor: 0x060913,
+        lightColor: 0xe0f2fe,
+        emergColor: 0xf43f5e,
+        briefing: 'Final underground extraction line. Defeat the Sector Overlord to board the surface train.',
+        waves: [
+          { normal: 12, runner: 10, heavy: 4, boss: 0, spawnInterval: 0.82 },
+          { normal: 14, runner: 10, heavy: 6, boss: 1, spawnInterval: 0.8 },
+          { normal: 10, runner: 10, heavy: 5, boss: 2, spawnInterval: 0.85 }
+        ]
+      }
+    ];
+
+    const WEAPON_DEFS = [
+      {
+        key: 'smg',
+        slot: 1,
+        name: 'MP7 TACTICAL SMG',
+        typeLabel: 'SUBMACHINE GUN // AUTO',
+        damage: 21,
+        headshotMult: 1.65,
+        fireRate: 0.085,
+        magSize: 36,
+        maxReserve: 216,
+        reloadTime: 1.35,
+        auto: true,
+        pellets: 1,
+        spread: 0.018,
+        recoilKick: 0.022,
+        tracerColor: 0x38bdf8,
+        isRocket: false
+      },
+      {
+        key: 'shotgun',
+        slot: 2,
+        name: 'M870 TACTICAL PUMP',
+        typeLabel: 'COMBAT SHOTGUN // BUCKSHOT',
+        damage: 18,
+        headshotMult: 1.5,
+        fireRate: 0.72,
+        magSize: 8,
+        maxReserve: 56,
+        reloadTime: 1.95,
+        auto: false,
+        pellets: 8,
+        spread: 0.068,
+        recoilKick: 0.085,
+        tracerColor: 0xfbbf24,
+        isRocket: false
+      },
+      {
+        key: 'rifle',
+        slot: 3,
+        name: 'MK18 ASSAULT RIFLE',
+        typeLabel: 'CARBINE RIFLE // FULL-AUTO',
+        damage: 36,
+        headshotMult: 1.85,
+        fireRate: 0.115,
+        magSize: 30,
+        maxReserve: 180,
+        reloadTime: 1.65,
+        auto: true,
+        pellets: 1,
+        spread: 0.01,
+        recoilKick: 0.036,
+        tracerColor: 0x34d399,
+        isRocket: false
+      },
+      {
+        key: 'rocket',
+        slot: 4,
+        name: 'M320 HE LAUNCHER',
+        typeLabel: 'HEAVY ORDNANCE // EXPLOSIVE',
+        damage: 280,
+        splashRadius: 6.2,
+        headshotMult: 1.2,
+        fireRate: 1.1,
+        magSize: 1,
+        maxReserve: 10,
+        reloadTime: 2.2,
+        auto: false,
+        pellets: 1,
+        spread: 0.005,
+        recoilKick: 0.14,
+        tracerColor: 0xf43f5e,
+        isRocket: true
+      }
+    ];
+
+    const ZOMBIE_TYPES = {
+      normal: {
+        name: 'Infected Commuter',
+        hp: 80,
+        speed: 3.4,
+        damage: 12,
+        attackRate: 1.0,
+        attackRange: 1.65,
+        scale: 1.0,
+        score: 100,
+        skinColor: 0x6b8e63,
+        shirtColor: 0x334155,
+        pantsColor: 0x1e293b,
+        eyeColor: 0xa3e635
+      },
+      runner: {
+        name: 'Crimson Stalker',
+        hp: 55,
+        speed: 5.5,
+        damage: 10,
+        attackRate: 0.75,
+        attackRange: 1.55,
+        scale: 0.92,
+        score: 140,
+        skinColor: 0x993d3d,
+        shirtColor: 0x451a1a,
+        pantsColor: 0x1f1212,
+        eyeColor: 0xff4422
+      },
+      heavy: {
+        name: 'Riot Juggernaut',
+        hp: 240,
+        speed: 2.35,
+        damage: 22,
+        attackRate: 1.35,
+        attackRange: 1.85,
+        scale: 1.22,
+        score: 260,
+        skinColor: 0x526b5c,
+        shirtColor: 0x1e293b,
+        pantsColor: 0x0f172a,
+        eyeColor: 0xf59e0b,
+        armored: true
+      },
+      boss: {
+        name: 'APEX METRO ABOMINATION',
+        hp: 780,
+        speed: 3.05,
+        damage: 34,
+        attackRate: 1.25,
+        attackRange: 2.45,
+        scale: 1.68,
+        score: 1000,
+        skinColor: 0x3f2e4c,
+        shirtColor: 0x27173a,
+        pantsColor: 0x140d1f,
+        eyeColor: 0xf43f5e,
+        isBoss: true
+      }
+    };
+
+    // =========================================================================
+    // 2. SYNTHESIZED WEB AUDIO API SOUND ENGINE (ZERO EXTERNAL ASSETS NEEDED)
+    // =========================================================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.ambientOsc = null;
+        this.ambientGain = null;
+      }
+
+      init() {
+        if (this.ctx) {
+          if (this.ctx.state === 'suspended') this.ctx.resume();
+          return;
+        }
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        this.ctx = new AudioCtx();
+        this.startAmbientDrone();
+      }
+
+      startAmbientDrone() {
+        if (!this.ctx || this.ambientOsc) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const sub = this.ctx.createOscillator();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sawtooth';
+          osc.frequency.value = 46;
+          sub.type = 'sine';
+          sub.frequency.value = 23;
+
+          filter.type = 'lowpass';
+          filter.frequency.value = 110;
+
+          gain.gain.value = this.enabled ? 0.045 : 0;
+
+          osc.connect(filter);
+          sub.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          sub.start();
+          this.ambientOsc = osc;
+          this.ambientGain = gain;
+        } catch (e) {}
+      }
+
+      setEnabled(flag) {
+        this.enabled = flag;
+        if (this.ambientGain && this.ctx) {
+          this.ambientGain.gain.setTargetAtTime(flag ? 0.045 : 0, this.ctx.currentTime, 0.1);
+        }
+      }
+
+      playNoiseBurst(duration, filterFreq, filterType, volume, pitchDecay = false) {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.45));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = filterType;
+        filter.frequency.setValueAtTime(filterFreq, now);
+        if (pitchDecay) {
+          filter.frequency.exponentialRampToValueAtTime(Math.max(60, filterFreq * 0.2), now + duration);
+        }
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(volume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+
+      playShoot(weaponKey) {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (weaponKey === 'smg') {
+          this.playNoiseBurst(0.09, 1400, 'bandpass', 0.22, true);
+          this.playTone(170, 55, 0.07, 'triangle', 0.18);
+        } else if (weaponKey === 'shotgun') {
+          this.playNoiseBurst(0.26, 650, 'lowpass', 0.42, true);
+          this.playTone(110, 32, 0.22, 'sawtooth', 0.32);
+        } else if (weaponKey === 'rifle') {
+          this.playNoiseBurst(0.13, 1100, 'bandpass', 0.28, true);
+          this.playTone(145, 45, 0.1, 'sawtooth', 0.24);
+        } else if (weaponKey === 'rocket') {
+          this.playNoiseBurst(0.38, 450, 'lowpass', 0.35, true);
+          this.playTone(95, 40, 0.32, 'sawtooth', 0.25);
+        }
+      }
+
+      playExplosion() {
+        if (!this.enabled || !this.ctx) return;
+        this.playNoiseBurst(0.75, 280, 'lowpass', 0.55, true);
+        this.playTone(75, 22, 0.65, 'sine', 0.48);
+      }
+
+      playReload() {
+        if (!this.enabled || !this.ctx) return;
+        this.playTone(520, 780, 0.06, 'square', 0.08);
+        setTimeout(() => this.playTone(680, 420, 0.07, 'triangle', 0.1), 220);
+      }
+
+      playDryFire() {
+        if (!this.enabled || !this.ctx) return;
+        this.playTone(880, 440, 0.03, 'square', 0.08);
+      }
+
+      playHit(isHeadshot) {
+        if (!this.enabled || !this.ctx) return;
+        if (isHeadshot) {
+          this.playTone(1350, 1850, 0.07, 'sine', 0.16);
+        } else {
+          this.playTone(420, 260, 0.045, 'triangle', 0.1);
+        }
+      }
+
+      playZombieGroan(isBoss = false) {
+        if (!this.enabled || !this.ctx) return;
+        const base = isBoss ? 68 : 115 + Math.random() * 45;
+        this.playTone(base, base * 0.65, isBoss ? 0.55 : 0.28, 'sawtooth', isBoss ? 0.22 : 0.09);
+      }
+
+      playPlayerHurt() {
+        if (!this.enabled || !this.ctx) return;
+        this.playNoiseBurst(0.18, 360, 'lowpass', 0.28, true);
+        this.playTone(130, 65, 0.16, 'sawtooth', 0.22);
+      }
+
+      playHeal() {
+        if (!this.enabled || !this.ctx) return;
+        this.playTone(440, 880, 0.22, 'sine', 0.15);
+      }
+
+      playTrainHorn() {
+        if (!this.enabled || !this.ctx) return;
+        this.playTone(185, 180, 0.85, 'sawtooth', 0.2);
+        this.playTone(233, 228, 0.85, 'sawtooth', 0.18);
+      }
+
+      playDoorChime() {
+        if (!this.enabled || !this.ctx) return;
+        this.playTone(784, 784, 0.22, 'sine', 0.14);
+        setTimeout(() => this.playTone(587, 587, 0.32, 'sine', 0.14), 240);
+      }
+
+      playTone(startFreq, endFreq, duration, type = 'sine', volume = 0.15) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(startFreq, now);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + duration);
+          gain.gain.setValueAtTime(volume, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration);
+        } catch (e) {}
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // =========================================================================
+    // 3. PROCEDURAL TEXTURES & SHARED GEOMETRY/MATERIAL CACHE (4GB RAM OPT)
+    // =========================================================================
+    function createTileTexture(bgHex, lineHex, gridCount = 4, noiseAmt = 14) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = bgHex;
+      ctx.fillRect(0, 0, 128, 128);
+
+      // Subtle concrete speckle
+      for (let i = 0; i < 320; i++) {
+        const v = (Math.random() - 0.5) * noiseAmt;
+        ctx.fillStyle = v > 0 ? `rgba(255,255,255,${v / 100})` : `rgba(0,0,0,${-v / 100})`;
+        ctx.fillRect(Math.random() * 128, Math.random() * 128, 3, 3);
+      }
+
+      ctx.strokeStyle = lineHex;
+      ctx.lineWidth = 2;
+      const step = 128 / gridCount;
+      for (let i = 0; i <= gridCount; i++) {
+        const p = i * step;
+        ctx.beginPath();
+        ctx.moveTo(p, 0); ctx.lineTo(p, 128);
+        ctx.moveTo(0, p); ctx.lineTo(128, p);
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function createHazardTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(0, 0, 128, 32);
+      ctx.fillStyle = '#111827';
+      for (let x = -32; x < 160; x += 32) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + 16, 0);
+        ctx.lineTo(x + 32, 32);
+        ctx.lineTo(x + 16, 32);
+        ctx.closePath();
+        ctx.fill();
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function createStationSignTexture(stationNum, stationName) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 512, 128);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(4, 4, 504, 120);
+
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(14, 14, 484, 30);
+      ctx.fillStyle = '#e0f2fe';
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText(`METRO TRANSIT AUTHORITY // SECTOR 0${stationNum}`, 26, 35);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 34px sans-serif';
+      ctx.fillText(stationName, 26, 92);
+
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    // Shared Geometry Registry (Created once, reused everywhere!)
+    const GEO = {
+      box: new THREE.BoxGeometry(1, 1, 1),
+      cyl: new THREE.CylinderGeometry(0.5, 0.5, 1, 8),
+      sphere: new THREE.SphereGeometry(0.5, 8, 8),
+      plane: new THREE.PlaneGeometry(1, 1)
+    };
+
+    const TEX = {
+      floor: createTileTexture('#1e2530', '#11161d', 4, 18),
+      wall: createTileTexture('#24303f', '#141c26', 4, 14),
+      ceiling: createTileTexture('#12161f', '#0b0e14', 2, 10),
+      hazard: createHazardTexture()
+    };
+    TEX.floor.repeat.set(16, 42);
+    TEX.wall.repeat.set(36, 4);
+    TEX.ceiling.repeat.set(12, 36);
+    TEX.hazard.repeat.set(38, 1);
+
+    const MAT = {
+      floor: new THREE.MeshLambertMaterial({ map: TEX.floor }),
+      wall: new THREE.MeshLambertMaterial({ map: TEX.wall }),
+      ceiling: new THREE.MeshLambertMaterial({ map: TEX.ceiling }),
+      hazard: new THREE.MeshBasicMaterial({ map: TEX.hazard }),
+      pillar: new THREE.MeshLambertMaterial({ color: 0x334155 }),
+      pillarBase: new THREE.MeshLambertMaterial({ color: 0x1e293b }),
+      trackBed: new THREE.MeshLambertMaterial({ color: 0x111318 }),
+      railSteel: new THREE.MeshLambertMaterial({ color: 0x94a3b8 }),
+      sleeperWood: new THREE.MeshLambertMaterial({ color: 0x3b281e }),
+      benchMetal: new THREE.MeshLambertMaterial({ color: 0x475569 }),
+      benchSeat: new THREE.MeshLambertMaterial({ color: 0x0f172a }),
+      lightBulb: new THREE.MeshBasicMaterial({ color: 0xe0f2fe }),
+      lightOff: new THREE.MeshBasicMaterial({ color: 0x1e293b }),
+      emergBulb: new THREE.MeshBasicMaterial({ color: 0xf59e0b }),
+      tunnelDark: new THREE.MeshBasicMaterial({ color: 0x030508 }),
+      trainBody: new THREE.MeshLambertMaterial({ color: 0x64748b }),
+      trainStripe: new THREE.MeshBasicMaterial({ color: 0x0ea5e9 }),
+      trainInterior: new THREE.MeshLambertMaterial({ color: 0x1e293b }),
+      trainWindow: new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.45 }),
+      trainHeadlight: new THREE.MeshBasicMaterial({ color: 0xfef08a }),
+      crateBody: new THREE.MeshLambertMaterial({ color: 0x065f46 }),
+      crateGlow: new THREE.MeshBasicMaterial({ color: 0x10b981 }),
+      gunMetalDark: new THREE.MeshLambertMaterial({ color: 0x1e293b }),
+      gunMetalLight: new THREE.MeshLambertMaterial({ color: 0x64748b }),
+      gunAccentCyan: new THREE.MeshBasicMaterial({ color: 0x22d3ee }),
+      gunAccentAmber: new THREE.MeshBasicMaterial({ color: 0xf59e0b }),
+      gunWood: new THREE.MeshLambertMaterial({ color: 0x78350f }),
+      muzzleFlash: new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.9 })
+    };
+
+    // =========================================================================
+    // 4. THREE.JS SCENE, CAMERA, RENDERER & LIGHTING SETUP
+    // =========================================================================
+    const canvas = document.getElementById('game-canvas');
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      powerPreference: 'high-performance'
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = false; // Disabled for 4GB RAM smooth FPS
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x060b12);
+    scene.fog = new THREE.FogExp2(0x060b12, GRAPHICS_PRESETS.LOW.fogDensity);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, GRAPHICS_PRESETS.LOW.farClip);
+    camera.rotation.order = 'YXZ';
+    scene.add(camera);
+
+    // Ambient + Hemisphere + Flickering Point Lights
+    const ambientLight = new THREE.AmbientLight(0x64748b, 0.85);
+    scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x0f172a, 0.65);
+    hemiLight.position.set(0, 10, 0);
+    scene.add(hemiLight);
+
+    // Muzzle flash dynamic point light
+    const muzzleLight = new THREE.PointLight(0xfbbf24, 0, 12);
+    camera.add(muzzleLight);
+
+    // Dynamic station ceiling point lights (toggled based on graphics preset)
+    const stationLights = [];
+    const lightFixtures = [];
+    const emergencyFixtures = [];
+
+    // =========================================================================
+    // 5. SUBWAY STATION & WORKING TRAIN ENVIRONMENT BUILDER
+    // =========================================================================
+    const colliders = []; // Array of { minX, maxX, minZ, maxZ, isTrainWall }
+    const signMeshes = [];
+    let signTexture = null;
+    let supplyCrates = [];
+
+    function addBoxMesh(parent, w, h, d, x, y, z, material, addCollider = false, isTrainWall = false) {
+      const mesh = new THREE.Mesh(GEO.box, material);
+      mesh.scale.set(w, h, d);
+      mesh.position.set(x, y, z);
+      parent.add(mesh);
+      if (addCollider) {
+        colliders.push({
+          minX: x - w * 0.5,
+          maxX: x + w * 0.5,
+          minZ: z - d * 0.5,
+          maxZ: z + d * 0.5,
+          isTrainWall
+        });
+      }
+      return mesh;
+    }
+
+    const stationGroup = new THREE.Group();
+    scene.add(stationGroup);
+
+    const trainGroup = new THREE.Group();
+    scene.add(trainGroup);
+    let trainLeftDoors = [];
+    let trainBoardingBeacon = null;
+
+    function buildSubwayEnvironment() {
+      // 1. Main Platform Floor (x: -16 to +7, z: -48 to +48)
+      addBoxMesh(stationGroup, 23, 1, 96, -4.5, -0.5, 0, MAT.floor, false);
+
+      // Yellow Tactile Hazard Edge Strip at x = 6.6
+      addBoxMesh(stationGroup, 0.65, 0.04, 96, 6.6, 0.02, 0, MAT.hazard, false);
+
+      // 2. Sunken Railway Track Bed (x: 7 to 17, y: -1.35)
+      addBoxMesh(stationGroup, 10, 0.5, 140, 12, -1.6, 0, MAT.trackBed, false);
+      // Platform drop-off wall
+      addBoxMesh(stationGroup, 0.3, 1.4, 96, 6.9, -0.7, 0, MAT.pillarBase, false);
+
+      // Steel Rails & Wooden Sleepers
+      addBoxMesh(stationGroup, 0.16, 0.18, 130, 9.8, -1.25, 0, MAT.railSteel, false);
+      addBoxMesh(stationGroup, 0.16, 0.18, 130, 12.6, -1.25, 0, MAT.railSteel, false);
+      addBoxMesh(stationGroup, 0.12, 0.22, 130, 14.1, -1.22, 0, MAT.railSteel, false); // Third rail
+
+      for (let z = -56; z <= 56; z += 2.0) {
+        addBoxMesh(stationGroup, 4.4, 0.12, 0.35, 11.2, -1.32, z, MAT.sleeperWood, false);
+      }
+
+      // 3. Station Walls & Ceiling
+      // West Wall (x = -16)
+      addBoxMesh(stationGroup, 0.8, 7.5, 96, -16.0, 3.5, 0, MAT.wall, true);
+      // Far East Tunnel Wall beyond tracks (x = 16.8)
+      addBoxMesh(stationGroup, 0.8, 8.5, 120, 16.8, 3.0, 0, MAT.wall, true);
+      // Ceiling (y = 7.2)
+      addBoxMesh(stationGroup, 34, 0.6, 96, 0.4, 7.2, 0, MAT.ceiling, false);
+
+      // North & South Platform End Barriers + Dark Zombie Spawn Tunnels
+      // North end (z = -47.5) leaves alcoves at x = -11 and x = 1 for zombies
+      addBoxMesh(stationGroup, 7.5, 7.5, 1.0, -4.5, 3.5, -47.5, MAT.wall, true);
+      addBoxMesh(stationGroup, 4.0, 7.5, 1.0, -14.0, 3.5, -47.5, MAT.wall, true);
+      // Dark tunnel portals at north end
+      addBoxMesh(stationGroup, 4.5, 5.5, 0.5, -10.2, 2.5, -48.2, MAT.tunnelDark, false);
+      addBoxMesh(stationGroup, 5.5, 5.5, 0.5, 2.2, 2.5, -48.2, MAT.tunnelDark, false);
+
+      // South end (z = +47.5)
+      addBoxMesh(stationGroup, 7.5, 7.5, 1.0, -4.5, 3.5, 47.5, MAT.wall, true);
+      addBoxMesh(stationGroup, 4.0, 7.5, 1.0, -14.0, 3.5, 47.5, MAT.wall, true);
+      addBoxMesh(stationGroup, 4.5, 5.5, 0.5, -10.2, 2.5, 48.2, MAT.tunnelDark, false);
+      addBoxMesh(stationGroup, 5.5, 5.5, 0.5, 2.2, 2.5, 48.2, MAT.tunnelDark, false);
+
+      // Invisible track-edge safety collider (blocks falling onto tracks UNLESS train doors are open at boarding portals)
+      // We handle track edge x > 6.4 dynamically in player physics so the player can step into the train at door positions!
+
+      // 4. Structural Pillars, Benches, Signs & Ceiling Lights along the platform
+      signTexture = createStationSignTexture(1, STATIONS[0].name);
+      const signMat = new THREE.MeshBasicMaterial({ map: signTexture });
+
+      for (let z = -36; z <= 36; z += 12) {
+        // Two rows of pillars: x = -9.5 and x = 2.0
+        [-9.5, 2.0].forEach((px) => {
+          addBoxMesh(stationGroup, 1.1, 7.0, 1.1, px, 3.5, z, MAT.pillar, true);
+          addBoxMesh(stationGroup, 1.25, 1.2, 1.25, px, 0.6, z, MAT.pillarBase, false);
+          addBoxMesh(stationGroup, 1.16, 0.35, 1.16, px, 1.5, z, MAT.hazard, false);
+        });
+
+        // Overhead Transverse Beam
+        addBoxMesh(stationGroup, 33, 0.55, 0.8, 0.4, 6.75, z, MAT.pillarBase, false);
+
+        // Hanging Illuminated Station Name Sign
+        const signBoard = addBoxMesh(stationGroup, 4.6, 1.1, 0.22, -3.5, 5.35, z, signMat, false);
+        signMeshes.push(signBoard);
+
+        // Passenger Benches between pillars
+        if (z < 36) {
+          const bz = z + 6;
+          addBoxMesh(stationGroup, 1.2, 0.5, 3.4, -3.8, 0.25, bz, MAT.benchMetal, true);
+          addBoxMesh(stationGroup, 0.2, 0.65, 3.4, -3.8, 0.75, bz, MAT.benchSeat, false);
+        }
+
+        // Ceiling Fluorescent Light Fixtures
+        const fixtureBulb = addBoxMesh(stationGroup, 1.8, 0.12, 3.2, -3.8, 6.82, z + 6, MAT.lightBulb, false);
+        lightFixtures.push({ mesh: fixtureBulb, phase: Math.random() * 10 });
+
+        // Emergency Wall Beacons on West Wall
+        const emergBulb = addBoxMesh(stationGroup, 0.25, 0.45, 0.45, -15.5, 4.8, z, MAT.emergBulb.clone(), false);
+        emergencyFixtures.push({ mesh: emergBulb, phase: z * 0.2 });
+      }
+
+      // Add 3 point lights for MEDIUM/HIGH graphics modes
+      [-24, 0, 24].forEach((lz) => {
+        const pl = new THREE.PointLight(0xdbeafe, 0.65, 28);
+        pl.position.set(-3.5, 6.1, lz);
+        scene.add(pl);
+        stationLights.push(pl);
+      });
+
+      // Ticket Kiosks / Vending Machines along West Wall
+      [-28, -14, 14, 28].forEach((vz) => {
+        addBoxMesh(stationGroup, 1.2, 2.3, 1.8, -14.8, 1.15, vz, MAT.pillarBase, true);
+        addBoxMesh(stationGroup, 0.1, 1.2, 1.2, -14.15, 1.35, vz, MAT.gunAccentCyan, false);
+      });
+
+      // Build the Subway Train on the tracks (x center = 11.2)
+      buildSubwayTrain();
+    }
+
+    function buildSubwayTrain() {
+      // Train consists of a long 38-meter articulated metro car centered at x = 11.2
+      // Floor at y = -0.05 (flush with platform y = 0!)
+      const tx = 11.2;
+
+      // Train Floor & Roof
+      addBoxMesh(trainGroup, 4.4, 0.25, 38, tx, -0.12, 0, MAT.trainInterior, false);
+      addBoxMesh(trainGroup, 4.4, 0.25, 38, tx, 3.45, 0, MAT.trainBody, false);
+
+      // Far Right (East) Wall of Train (x = tx + 2.1)
+      addBoxMesh(trainGroup, 0.2, 3.5, 38, tx + 2.1, 1.7, 0, MAT.trainBody, false);
+      // Windows along East Wall
+      addBoxMesh(trainGroup, 0.24, 1.2, 32, tx + 2.1, 2.0, 0, MAT.trainWindow, false);
+
+      // Front & Rear Bulkheads (z = -19 and z = +19)
+      addBoxMesh(trainGroup, 4.4, 3.5, 0.4, tx, 1.7, -18.8, MAT.trainBody, false);
+      addBoxMesh(trainGroup, 4.4, 3.5, 0.4, tx, 1.7, 18.8, MAT.trainBody, false);
+
+      // Bright Headlights & Tail Lights at both ends
+      addBoxMesh(trainGroup, 0.7, 0.4, 0.15, tx - 1.2, 1.1, 19.05, MAT.trainHeadlight, false);
+      addBoxMesh(trainGroup, 0.7, 0.4, 0.15, tx + 1.2, 1.1, 19.05, MAT.trainHeadlight, false);
+      addBoxMesh(trainGroup, 0.7, 0.4, 0.15, tx - 1.2, 1.1, -19.05, MAT.trainHeadlight, false);
+      addBoxMesh(trainGroup, 0.7, 0.4, 0.15, tx + 1.2, 1.1, -19.05, MAT.trainHeadlight, false);
+
+      // Platform-facing (West) Train Wall at x = tx - 2.1 = 9.1
+      // Has 3 wide double-door openings at z = -11, z = 0, z = +11 (each opening is 3.2m wide)
+      const wallX = tx - 2.1;
+      const wallSegments = [
+        { z: -15.8, len: 6.4 },
+        { z: -5.5, len: 7.8 },
+        { z: 5.5, len: 7.8 },
+        { z: 15.8, len: 6.4 }
+      ];
+      wallSegments.forEach((seg) => {
+        addBoxMesh(trainGroup, 0.22, 3.5, seg.len, wallX, 1.7, seg.z, MAT.trainBody, false);
+        addBoxMesh(trainGroup, 0.25, 0.35, seg.len, wallX, 1.1, seg.z, MAT.trainStripe, false);
+        addBoxMesh(trainGroup, 0.26, 1.1, seg.len * 0.75, wallX, 2.05, seg.z, MAT.trainWindow, false);
+      });
+
+      // Door Header Beams above the 3 door portals
+      [-11, 0, 11].forEach((dz) => {
+        addBoxMesh(trainGroup, 0.22, 0.65, 3.2, wallX, 3.15, dz, MAT.trainBody, false);
+
+        // Sliding Double Doors (Left leaf & Right leaf)
+        const doorLeafA = addBoxMesh(trainGroup, 0.14, 2.8, 1.55, wallX + 0.05, 1.4, dz - 0.78, MAT.trainStripe, false);
+        const doorLeafB = addBoxMesh(trainGroup, 0.14, 2.8, 1.55, wallX + 0.05, 1.4, dz + 0.78, MAT.trainStripe, false);
+        trainLeftDoors.push({
+          leafA: doorLeafA,
+          leafB: doorLeafB,
+          baseZA: dz - 0.78,
+          baseZB: dz + 0.78
+        });
+      });
+
+      // Interior Train Seats, Handrails & Ceiling Lights
+      [-14, -5.5, 5.5, 14].forEach((sz) => {
+        addBoxMesh(trainGroup, 0.75, 0.55, 4.6, tx + 1.55, 0.3, sz, MAT.trainStripe, false);
+      });
+      [-11, 0, 11].forEach((lz) => {
+        addBoxMesh(trainGroup, 1.2, 0.08, 3.5, tx, 3.28, lz, MAT.lightBulb, false);
+      });
+
+      // Boarding Beacons on all 3 door floors (z = -11, 0, +11)
+      trainBoardingBeacon = new THREE.Group();
+      [-11, 0, 11].forEach((dz) => {
+        addBoxMesh(trainBoardingBeacon, 2.8, 0.06, 2.8, tx - 1.2, 0.04, dz, MAT.crateGlow, false);
+      });
+      trainBoardingBeacon.visible = false;
+      trainGroup.add(trainBoardingBeacon);
+
+      // Park train initially out of sight in the north tunnel
+      trainGroup.position.set(0, 0, -95);
+    }
+
+    function spawnSupplyCrates() {
+      // Clear old crates
+      supplyCrates.forEach((c) => stationGroup.remove(c.group));
+      supplyCrates = [];
+
+      const positions = [
+        { x: -12.5, z: -18 },
+        { x: -12.5, z: 18 },
+        { x: -1.5, z: 0 }
+      ];
+      positions.forEach((pos) => {
+        const g = new THREE.Group();
+        g.position.set(pos.x, 0, pos.z);
+        addBoxMesh(g, 1.1, 0.7, 0.8, 0, 0.35, 0, MAT.crateBody, false);
+        addBoxMesh(g, 1.14, 0.12, 0.84, 0, 0.55, 0, MAT.crateGlow, false);
+        stationGroup.add(g);
+        supplyCrates.push({ group: g, x: pos.x, z: pos.z, active: true, cooldown: 0 });
+      });
+    }
+
+    // =========================================================================
+    // 6. FIRST-PERSON 3D WEAPON VIEWMODELS & RIG
+    // =========================================================================
+    const weaponRig = new THREE.Group();
+    camera.add(weaponRig);
+
+    const weaponMeshes = {};
+    let muzzleFlashMesh = null;
+
+    function buildWeaponViewmodels() {
+      // 1. MP7 SMG
+      const smg = new THREE.Group();
+      addBoxMesh(smg, 0.07, 0.1, 0.42, 0, 0, -0.15, MAT.gunMetalDark);
+      addBoxMesh(smg, 0.075, 0.03, 0.36, 0, 0.06, -0.14, MAT.gunMetalLight);
+      addBoxMesh(smg, 0.025, 0.025, 0.18, 0, 0.01, -0.42, MAT.gunMetalLight); // Barrel
+      addBoxMesh(smg, 0.045, 0.18, 0.06, 0, -0.11, -0.12, MAT.gunMetalDark); // Magazine
+      addBoxMesh(smg, 0.05, 0.02, 0.08, 0, 0.085, -0.12, MAT.gunAccentCyan); // Holo sight
+      weaponMeshes.smg = smg;
+      weaponRig.add(smg);
+
+      // 2. M870 Pump Shotgun
+      const shotgun = new THREE.Group();
+      addBoxMesh(shotgun, 0.08, 0.1, 0.68, 0, -0.01, -0.25, MAT.gunMetalDark);
+      addBoxMesh(shotgun, 0.04, 0.04, 0.74, 0, 0.03, -0.32, MAT.gunMetalLight); // Long barrel
+      addBoxMesh(shotgun, 0.09, 0.07, 0.24, 0, -0.02, -0.38, MAT.gunWood); // Wood pump
+      addBoxMesh(shotgun, 0.07, 0.11, 0.22, 0, -0.04, 0.12, MAT.gunWood); // Stock
+      addBoxMesh(shotgun, 0.03, 0.02, 0.04, 0, 0.06, -0.64, MAT.gunAccentAmber); // Front bead
+      shotgun.visible = false;
+      weaponMeshes.shotgun = shotgun;
+      weaponRig.add(shotgun);
+
+      // 3. MK18 Assault Rifle
+      const rifle = new THREE.Group();
+      addBoxMesh(rifle, 0.075, 0.11, 0.56, 0, 0, -0.22, MAT.gunMetalDark);
+      addBoxMesh(rifle, 0.065, 0.08, 0.32, 0, 0.01, -0.52, MAT.gunMetalLight); // Handguard
+      addBoxMesh(rifle, 0.03, 0.03, 0.22, 0, 0.01, -0.72, MAT.gunMetalDark); // Suppressor/Barrel
+      addBoxMesh(rifle, 0.05, 0.2, 0.08, 0, -0.13, -0.24, MAT.gunMetalLight); // STANAG Mag
+      addBoxMesh(rifle, 0.06, 0.06, 0.12, 0, 0.08, -0.18, MAT.gunMetalDark); // Optic housing
+      addBoxMesh(rifle, 0.04, 0.03, 0.02, 0, 0.08, -0.24, MAT.gunAccentCyan); // Lens
+      rifle.visible = false;
+      weaponMeshes.rifle = rifle;
+      weaponRig.add(rifle);
+
+      // 4. M320 / RPG Rocket Launcher
+      const rocket = new THREE.Group();
+      addBoxMesh(rocket, 0.13, 0.13, 0.82, 0, 0.02, -0.28, MAT.crateBody);
+      addBoxMesh(rocket, 0.16, 0.16, 0.14, 0, 0.02, -0.68, MAT.gunMetalDark); // Flared muzzle
+      addBoxMesh(rocket, 0.15, 0.15, 0.18, 0, 0.02, -0.78, MAT.gunAccentAmber); // Warhead tip
+      addBoxMesh(rocket, 0.04, 0.09, 0.08, -0.08, 0.09, -0.32, MAT.gunAccentCyan); // Side rangefinder
+      rocket.visible = false;
+      weaponMeshes.rocket = rocket;
+      weaponRig.add(rocket);
+
+      // Shared 3D Muzzle Flash Star
+      muzzleFlashMesh = new THREE.Group();
+      const f1 = addBoxMesh(muzzleFlashMesh, 0.22, 0.05, 0.05, 0, 0, 0, MAT.muzzleFlash);
+      const f2 = addBoxMesh(muzzleFlashMesh, 0.05, 0.22, 0.05, 0, 0, 0, MAT.muzzleFlash);
+      f1.rotation.z = Math.PI * 0.25;
+      f2.rotation.z = Math.PI * 0.25;
+      muzzleFlashMesh.position.set(0, 0.02, -0.78);
+      muzzleFlashMesh.visible = false;
+      weaponRig.add(muzzleFlashMesh);
+
+      weaponRig.position.set(0.26, -0.24, -0.35);
+    }
+
+    // =========================================================================
+    // 7. OBJECT POOLS: BULLET TRACERS, ROCKETS & PARTICLES (ZERO GC SPIKES)
+    // =========================================================================
+    const tracerPool = [];
+    const rocketPool = [];
+    const particlePool = [];
+
+    function initObjectPools() {
+      // 24 Reusable Bullet Tracers
+      for (let i = 0; i < 24; i++) {
+        const mat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.9 });
+        const mesh = new THREE.Mesh(GEO.box, mat);
+        mesh.visible = false;
+        scene.add(mesh);
+        tracerPool.push({ mesh, life: 0, maxLife: 0.07 });
+      }
+
+      // 6 Reusable Flying Rockets
+      for (let i = 0; i < 6; i++) {
+        const g = new THREE.Group();
+        addBoxMesh(g, 0.14, 0.14, 0.45, 0, 0, 0, MAT.gunAccentAmber);
+        addBoxMesh(g, 0.2, 0.2, 0.2, 0, 0, 0.25, MAT.muzzleFlash);
+        g.visible = false;
+        scene.add(g);
+        rocketPool.push({
+          group: g,
+          active: false,
+          pos: new THREE.Vector3(),
+          vel: new THREE.Vector3(),
+          life: 0
+        });
+      }
+
+      // 90 Reusable Low-Poly Particles (Blood, Sparks, Explosion Debris)
+      for (let i = 0; i < 90; i++) {
+        const mat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+        const mesh = new THREE.Mesh(GEO.box, mat);
+        mesh.visible = false;
+        scene.add(mesh);
+        particlePool.push({
+          mesh,
+          active: false,
+          vel: new THREE.Vector3(),
+          life: 0,
+          maxLife: 0.5,
+          gravity: 9.8
+        });
+      }
+    }
+
+    function spawnTracer(startPos, endPos, colorHex) {
+      const item = tracerPool.find((t) => t.life <= 0) || tracerPool[0];
+      const dist = startPos.distanceTo(endPos);
+      item.mesh.material.color.setHex(colorHex);
+      item.mesh.material.opacity = 0.9;
+      item.mesh.scale.set(0.025, 0.025, dist);
+      item.mesh.position.copy(startPos).lerp(endPos, 0.5);
+      item.mesh.lookAt(endPos);
+      item.mesh.visible = true;
+      item.life = item.maxLife;
+    }
+
+    function spawnParticles(pos, colorHex, count, speed = 4.5, scale = 0.09, maxLife = 0.45) {
+      const mult = GRAPHICS_PRESETS[gameState.graphics].particleMultiplier;
+      const finalCount = Math.max(2, Math.round(count * mult));
+      let spawned = 0;
+      for (let i = 0; i < particlePool.length && spawned < finalCount; i++) {
+        const p = particlePool[i];
+        if (!p.active) {
+          p.active = true;
+          p.life = maxLife * (0.7 + Math.random() * 0.5);
+          p.maxLife = p.life;
+          p.mesh.material.color.setHex(colorHex);
+          const s = scale * (0.7 + Math.random() * 0.6);
+          p.mesh.scale.set(s, s, s);
+          p.mesh.position.copy(pos);
+          p.vel.set(
+            (Math.random() - 0.5) * speed * 2,
+            Math.random() * speed * 1.2 + 1.0,
+            (Math.random() - 0.5) * speed * 2
+          );
+          p.mesh.visible = true;
+          spawned++;
+        }
+      }
+    }
+
+    // =========================================================================
+    // 8. ZOMBIE AI & ARTICULATED 3D LOW-POLY ZOMBIE SYSTEM
+    // =========================================================================
+    const activeZombies = [];
+    const raycaster = new THREE.Raycaster();
+
+    const ZOMBIE_SPAWN_POINTS = [
+      new THREE.Vector3(-10.2, 0, -45.5),
+      new THREE.Vector3(2.2, 0, -45.5),
+      new THREE.Vector3(-10.2, 0, 45.5),
+      new THREE.Vector3(2.2, 0, 45.5),
+      new THREE.Vector3(-13.5, 0, -32.0),
+      new THREE.Vector3(-13.5, 0, 32.0)
+    ];
+
+    function createZombieInstance(typeKey, stationMultiplier = 1.0) {
+      const def = ZOMBIE_TYPES[typeKey];
+      const root = new THREE.Group();
+
+      const skinMat = new THREE.MeshLambertMaterial({ color: def.skinColor });
+      const shirtMat = new THREE.MeshLambertMaterial({ color: def.shirtColor });
+      const pantsMat = new THREE.MeshLambertMaterial({ color: def.pantsColor });
+      const eyeMat = new THREE.MeshBasicMaterial({ color: def.eyeColor });
+
+      // Articulated Limbs
+      const leftLeg = addBoxMesh(root, 0.22, 0.75, 0.22, -0.15, 0.38, 0, pantsMat);
+      const rightLeg = addBoxMesh(root, 0.22, 0.75, 0.22, 0.15, 0.38, 0, pantsMat);
+      const torso = addBoxMesh(root, 0.54, 0.78, 0.32, 0, 1.14, 0, shirtMat);
+      const head = addBoxMesh(root, 0.38, 0.38, 0.38, 0, 1.74, 0.04, skinMat);
+
+      // Glowing Eyes
+      addBoxMesh(root, 0.07, 0.05, 0.05, -0.09, 1.77, 0.23, eyeMat);
+      addBoxMesh(root, 0.07, 0.05, 0.05, 0.09, 1.77, 0.23, eyeMat);
+
+      // Outstretched Zombie Arms
+      const leftArm = addBoxMesh(root, 0.18, 0.2, 0.68, -0.36, 1.36, 0.28, skinMat);
+      const rightArm = addBoxMesh(root, 0.18, 0.2, 0.68, 0.36, 1.36, 0.28, skinMat);
+
+      // Heavy Riot Armor / Boss Bio-Core details
+      if (def.armored) {
+        addBoxMesh(root, 0.64, 0.45, 0.42, 0, 1.24, 0, MAT.gunMetalLight); // Riot chestplate
+        addBoxMesh(root, 0.44, 0.24, 0.44, 0, 1.84, 0.04, MAT.gunMetalDark); // Riot helmet
+      }
+      if (def.isBoss) {
+        addBoxMesh(root, 0.26, 0.26, 0.14, 0, 1.22, 0.16, eyeMat); // Glowing chest core
+        addBoxMesh(root, 0.25, 0.32, 0.25, -0.38, 1.58, 0, eyeMat); // Left shoulder mutation
+        addBoxMesh(root, 0.25, 0.32, 0.25, 0.38, 1.58, 0, eyeMat); // Right shoulder mutation
+      }
+
+      // Floating Health Bar above Zombie
+      const hpBg = addBoxMesh(root, 0.7, 0.07, 0.02, 0, 2.15, 0, MAT.tunnelDark);
+      const hpFgMat = new THREE.MeshBasicMaterial({ color: def.isBoss ? 0xf43f5e : 0x10b981 });
+      const hpFg = addBoxMesh(root, 0.68, 0.05, 0.03, 0, 2.15, 0, hpFgMat);
+
+      root.scale.setScalar(def.scale);
+      scene.add(root);
+
+      const maxHp = Math.round(def.hp * stationMultiplier);
+      const zombie = {
+        typeKey,
+        def,
+        root,
+        leftLeg,
+        rightLeg,
+        leftArm,
+        rightArm,
+        torso,
+        head,
+        skinMat,
+        shirtMat,
+        hpBg,
+        hpFg,
+        hp: maxHp,
+        maxHp,
+        speed: def.speed * (0.92 + Math.random() * 0.16),
+        animPhase: Math.random() * Math.PI * 2,
+        attackCooldown: 0,
+        hitFlashTimer: 0,
+        groanTimer: 2 + Math.random() * 5,
+        dead: false,
+        deathTimer: 0
+      };
+
+      // Tag child meshes so raycasting identifies this zombie & whether it's a headshot
+      root.traverse((child) => {
+        if (child.isMesh) {
+          child.userData.zombie = zombie;
+          child.userData.isHead = (child === head);
+        }
+      });
+
+      return zombie;
+    }
+
+    function damageZombie(zombie, amount, isHeadshot, hitPoint) {
+      if (zombie.dead) return;
+
+      let finalDmg = amount;
+      if (isHeadshot) {
+        finalDmg *= 1.75;
+      } else if (zombie.def.armored) {
+        finalDmg *= 0.72; // Riot armor reduces body damage
+      }
+
+      zombie.hp -= finalDmg;
+      zombie.hitFlashTimer = 0.09;
+      zombie.skinMat.color.setHex(0xffffff);
+      zombie.shirtMat.color.setHex(0xef4444);
+
+      // Update floating health bar
+      const ratio = Math.max(0, zombie.hp / zombie.maxHp);
+      zombie.hpFg.scale.x = 0.68 * ratio;
+      zombie.hpFg.position.x = -0.34 * (1 - ratio);
+
+      // Blood / Armor spark particles
+      if (hitPoint) {
+        const pColor = (zombie.def.armored && !isHeadshot) ? 0xfbbf24 : 0xdc2626;
+        spawnParticles(hitPoint, pColor, isHeadshot ? 8 : 5, 4.0, 0.08, 0.38);
+      }
+
+      // Knockback slightly
+      const pushDir = new THREE.Vector3()
+        .subVectors(zombie.root.position, camera.position)
+        .setY(0)
+        .normalize();
+      zombie.root.position.addScaledVector(pushDir, zombie.def.isBoss ? 0.08 : 0.28);
+
+      showHitmarker(isHeadshot || zombie.hp <= 0);
+      sound.playHit(isHeadshot);
+
+      if (zombie.hp <= 0) {
+        killZombie(zombie, isHeadshot);
+      }
+    }
+
+    function killZombie(zombie, isHeadshot) {
+      if (zombie.dead) return;
+      zombie.dead = true;
+      zombie.deathTimer = 0.45;
+      zombie.hpBg.visible = false;
+      zombie.hpFg.visible = false;
+
+      gameState.kills++;
+      if (isHeadshot) gameState.headshots++;
+      gameState.score += zombie.def.score + (isHeadshot ? 50 : 0);
+
+      const burstPos = zombie.root.position.clone();
+      burstPos.y += 1.1 * zombie.def.scale;
+      spawnParticles(burstPos, 0xb91c1c, zombie.def.isBoss ? 22 : 11, 5.8, 0.13, 0.55);
+      sound.playZombieGroan(zombie.def.isBoss);
+    }
+
+    function removeZombie(zombie) {
+      scene.remove(zombie.root);
+      zombie.skinMat.dispose();
+      zombie.shirtMat.dispose();
+      zombie.hpFg.material.dispose();
+    }
+
+    // =========================================================================
+    // 9. PLAYER STATE, INPUT CONTROLS & WEAPON SYSTEM
+    // =========================================================================
+    const gameState = {
+      mode: 'MENU', // MENU, PLAYING, PAUSED, TRANSIT, ENDED
+      graphics: 'LOW',
+      sensitivity: 1.0,
+      stationIndex: 0,
+      waveIndex: 0,
+      waveQueue: [],
+      spawnTimer: 0,
+      waveCooldownTimer: 0,
+      score: 0,
+      kills: 0,
+      headshots: 0,
+      // Train state: 'AWAY', 'ARRIVING', 'BOARDING', 'DEPARTING'
+      trainState: 'AWAY',
+      trainZ: -95,
+      trainDoorOpenAmt: 0,
+      transitCountdown: 0,
+      // Performance FPS tracker
+      fpsFrames: 0,
+      fpsTime: performance.now(),
+      currentFps: 60
+    };
+
+    const player = {
+      pos: new THREE.Vector3(-4.0, 1.7, 16.0),
+      vel: new THREE.Vector3(),
+      yaw: 0,
+      pitch: 0,
+      radius: 0.48,
+      eyeHeight: 1.7,
+      hp: 100,
+      maxHp: 100,
+      stamina: 100,
+      maxStamina: 100,
+      medkits: 2,
+      onGround: true,
+      isSprinting: false,
+      isAiming: false,
+      bobPhase: 0,
+      recoilPitch: 0,
+      recoilZ: 0,
+      shakeTimer: 0,
+      shakeIntensity: 0,
+      currentWeaponIdx: 0,
+      fireCooldown: 0,
+      isReloading: false,
+      reloadTimer: 0,
+      weapons: WEAPON_DEFS.map((w) => ({
+        def: w,
+        mag: w.magSize,
+        reserve: w.maxReserve
+      }))
+    };
+
+    const keys = {};
+    let mouseDownLeft = false;
+    let pointerLocked = false;
+
+    function applyGraphicsPreset(presetKey) {
+      if (!GRAPHICS_PRESETS[presetKey]) return;
+      gameState.graphics = presetKey;
+      const cfg = GRAPHICS_PRESETS[presetKey];
+      renderer.setPixelRatio(cfg.pixelRatio);
+      scene.fog.density = cfg.fogDensity;
+      camera.far = cfg.farClip;
+      camera.updateProjectionMatrix();
+
+      stationLights.forEach((pl) => {
+        pl.visible = cfg.pointLightsEnabled;
+      });
+
+      // Update UI buttons
+      document.querySelectorAll('.gfx-btn').forEach((btn) => {
+        const active = btn.getAttribute('data-gfx') === presetKey;
+        btn.className = active
+          ? 'gfx-btn py-2.5 px-3 rounded-sm border border-cyan-400 bg-cyan-500/20 text-white font-bold text-xs font-mono-tech uppercase transition cursor-pointer'
+          : 'gfx-btn py-2.5 px-3 rounded-sm border border-slate-700 bg-slate-950/70 text-slate-300 font-bold text-xs font-mono-tech uppercase transition cursor-pointer hover:border-slate-500';
+      });
+      updateHUD();
+    }
+
+    function switchWeapon(index) {
+      if (index < 0 || index >= player.weapons.length) return;
+      if (player.currentWeaponIdx === index && !player.isReloading) return;
+      player.currentWeaponIdx = index;
+      player.isReloading = false;
+      player.reloadTimer = 0;
+      player.fireCooldown = 0.18;
+      player.recoilZ = 0.12;
+
+      const activeKey = player.weapons[index].def.key;
+      Object.keys(weaponMeshes).forEach((k) => {
+        weaponMeshes[k].visible = (k === activeKey);
+      });
+      document.getElementById('hud-reload-box').classList.add('hidden');
+      updateHUD();
+    }
+
+    function startReload() {
+      const w = player.weapons[player.currentWeaponIdx];
+      if (player.isReloading || w.mag >= w.def.magSize || w.reserve <= 0) return;
+      player.isReloading = true;
+      player.reloadTimer = w.def.reloadTime;
+      sound.playReload();
+      document.getElementById('hud-reload-box').classList.remove('hidden');
+    }
+
+    function useMedkit() {
+      if (player.medkits <= 0 || player.hp >= player.maxHp) return;
+      player.medkits--;
+      player.hp = Math.min(player.maxHp, player.hp + 45);
+      sound.playHeal();
+      const hv = document.getElementById('heal-vignette');
+      hv.style.opacity = '1';
+      setTimeout(() => { hv.style.opacity = '0'; }, 300);
+      showToast('+45 HP FIELD MEDKIT APPLIED');
+      updateHUD();
+    }
+
+    function fireCurrentWeapon() {
+      if (player.isReloading || player.fireCooldown > 0) return;
+      const w = player.weapons[player.currentWeaponIdx];
+      const def = w.def;
+
+      if (w.mag <= 0) {
+        sound.playDryFire();
+        player.fireCooldown = 0.25;
+        if (w.reserve > 0) startReload();
+        return;
+      }
+
+      w.mag--;
+      player.fireCooldown = def.fireRate;
+      sound.playShoot(def.key);
+
+      // Recoil & Muzzle Flash
+      player.recoilPitch += def.recoilKick;
+      player.recoilZ = Math.min(0.16, player.recoilZ + def.recoilKick * 1.4);
+      muzzleFlashMesh.visible = true;
+      muzzleFlashMesh.rotation.z = Math.random() * Math.PI;
+      muzzleLight.intensity = 2.2;
+      setTimeout(() => {
+        muzzleFlashMesh.visible = false;
+        muzzleLight.intensity = 0;
+      }, 45);
+
+      // Calculate muzzle world position for tracer origin
+      const muzzleWorldPos = new THREE.Vector3();
+      muzzleFlashMesh.getWorldPosition(muzzleWorldPos);
+
+      if (def.isRocket) {
+        launchRocketProjectile(muzzleWorldPos);
+      } else {
+        // Hitscan pellets (1 for SMG/Rifle, 8 for Shotgun)
+        const zombieMeshes = [];
+        activeZombies.forEach((z) => {
+          if (!z.dead) {
+            z.root.traverse((c) => {
+              if (c.isMesh) zombieMeshes.push(c);
+            });
+          }
+        });
+
+        for (let p = 0; p < def.pellets; p++) {
+          const spreadFactor = player.isAiming ? def.spread * 0.45 : def.spread;
+          const dir = new THREE.Vector3(
+            (Math.random() - 0.5) * spreadFactor,
+            (Math.random() - 0.5) * spreadFactor,
+            -1
+          ).normalize();
+          dir.applyQuaternion(camera.quaternion);
+
+          raycaster.set(camera.position, dir);
+          raycaster.far = 85;
+
+          const hits = raycaster.intersectObjects(zombieMeshes, false);
+          let endPoint = camera.position.clone().addScaledVector(dir, 55);
+
+          if (hits.length > 0) {
+            const topHit = hits[0];
+            endPoint.copy(topHit.point);
+            const hitZombie = topHit.object.userData.zombie;
+            const isHead = Boolean(topHit.object.userData.isHead);
+            if (hitZombie) {
+              damageZombie(hitZombie, def.damage, isHead, topHit.point);
+            }
+          } else {
+            // Check environment hit for spark effect
+            const envHits = raycaster.intersectObjects(stationGroup.children, false);
+            if (envHits.length > 0 && envHits[0].distance < 55) {
+              endPoint.copy(envHits[0].point);
+              spawnParticles(endPoint, 0x38bdf8, 3, 2.8, 0.05, 0.22);
+            }
+          }
+
+          spawnTracer(muzzleWorldPos, endPoint, def.tracerColor);
+        }
+      }
+
+      if (w.mag === 0 && w.reserve > 0) {
+        setTimeout(() => startReload(), 180);
+      }
+      updateHUD();
+    }
+
+    function launchRocketProjectile(startPos) {
+      const r = rocketPool.find((item) => !item.active) || rocketPool[0];
+      r.active = true;
+      r.life = 3.0;
+      r.pos.copy(startPos);
+      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+      r.vel.copy(dir).multiplyScalar(34);
+      r.group.position.copy(startPos);
+      r.group.lookAt(startPos.clone().add(dir));
+      r.group.visible = true;
+    }
+
+    function detonateRocket(pos) {
+      sound.playExplosion();
+      spawnParticles(pos, 0xf97316, 28, 8.5, 0.18, 0.65);
+      spawnParticles(pos, 0xfef08a, 14, 6.0, 0.14, 0.45);
+
+      // Camera shake based on distance
+      const distToPlayer = pos.distanceTo(player.pos);
+      if (distToPlayer < 18) {
+        triggerScreenShake(Math.max(0.08, (18 - distToPlayer) * 0.025), 0.35);
+      }
+
+      // Splash damage to all zombies in radius
+      const rocketDef = WEAPON_DEFS[3];
+      activeZombies.forEach((z) => {
+        if (z.dead) return;
+        const zCenter = z.root.position.clone();
+        zCenter.y += 1.0;
+        const d = zCenter.distanceTo(pos);
+        if (d <= rocketDef.splashRadius) {
+          const falloff = 1 - (d / rocketDef.splashRadius) * 0.65;
+          damageZombie(z, rocketDef.damage * falloff, false, zCenter);
+        }
+      });
+    }
+
+    // =========================================================================
+    // 10. STATION & WAVE PROGRESSION + SUBWAY TRAIN SEQUENCE
+    // =========================================================================
+    function startStation(stationIdx) {
+      gameState.stationIndex = stationIdx;
+      gameState.waveIndex = 0;
+      gameState.trainState = 'AWAY';
+      gameState.trainZ = -95;
+      gameState.trainDoorOpenAmt = 0;
+      trainGroup.position.set(0, 0, -95);
+      trainBoardingBeacon.visible = false;
+      updateTrainDoors(0);
+
+      // Clear any remaining zombies
+      while (activeZombies.length > 0) {
+        removeZombie(activeZombies.pop());
+      }
+
+      // Reset player onto the platform
+      player.pos.set(-4.0, player.eyeHeight, 12.0);
+      player.vel.set(0, 0, 0);
+      player.yaw = 0;
+      player.pitch = 0;
+
+      // Apply Station Theme & Sign Texture
+      const st = STATIONS[stationIdx];
+      scene.background.setHex(st.fogColor);
+      scene.fog.color.setHex(st.fogColor);
+      hemiLight.color.setHex(st.lightColor);
+
+      if (signTexture) signTexture.dispose();
+      signTexture = createStationSignTexture(st.id, st.name);
+      signMeshes.forEach((m) => {
+        m.material.map = signTexture;
+        m.material.needsUpdate = true;
+      });
+      emergencyFixtures.forEach((ef) => {
+        ef.mesh.material.color.setHex(st.emergColor);
+      });
+
+      spawnSupplyCrates();
+      startWave(0);
+    }
+
+    function startWave(waveIdx) {
+      const st = STATIONS[gameState.stationIndex];
+      gameState.waveIndex = waveIdx;
+      const wCfg = st.waves[waveIdx];
+
+      // Build shuffled spawn queue
+      const queue = [];
+      for (let i = 0; i < wCfg.normal; i++) queue.push('normal');
+      for (let i = 0; i < wCfg.runner; i++) queue.push('runner');
+      for (let i = 0; i < wCfg.heavy; i++) queue.push('heavy');
+      for (let i = 0; i < wCfg.boss; i++) queue.push('boss');
+
+      // Shuffle normal/runner/heavy, keep boss near end
+      for (let i = queue.length - 1; i > 0; i--) {
+        if (queue[i] === 'boss') continue;
+        const j = Math.floor(Math.random() * i);
+        const tmp = queue[i];
+        queue[i] = queue[j];
+        queue[j] = tmp;
+      }
+
+      gameState.waveQueue = queue;
+      gameState.spawnTimer = 1.0;
+
+      showToast(`STATION 0${st.id} // WAVE ${waveIdx + 1} OF ${st.waves.length} INCOMING`);
+      document.getElementById('hud-objective-text').textContent =
+        `SURVIVE WAVE ${waveIdx + 1}/${st.waves.length} — ELIMINATE ALL INFECTED`;
+      updateHUD();
+    }
+
+    function onWaveCleared() {
+      const st = STATIONS[gameState.stationIndex];
+      // Wave clear reward: restore partial ammo & stamina
+      player.hp = Math.min(player.maxHp, player.hp + 20);
+      player.weapons.forEach((w) => {
+        w.reserve = Math.min(w.def.maxReserve, w.reserve + w.def.magSize);
+      });
+      gameState.score += 350;
+
+      if (gameState.waveIndex + 1 < st.waves.length) {
+        showToast(`WAVE ${gameState.waveIndex + 1} CLEARED! (+20 HP & AMMO BONUS)`);
+        gameState.waveCooldownTimer = 3.5;
+      } else {
+        // Entire Station Cleared! Summon the Subway Train!
+        triggerTrainArrival();
+      }
+      updateHUD();
+    }
+
+    function triggerTrainArrival() {
+      gameState.trainState = 'ARRIVING';
+      gameState.trainZ = -90;
+      sound.playTrainHorn();
+      showToast('STATION CLEARED! EXTRACTION TRAIN ARRIVING ON TRACKS');
+      document.getElementById('hud-objective-text').textContent =
+        'STAND CLEAR OF PLATFORM EDGE — SUBWAY TRAIN ARRIVING';
+    }
+
+    function updateTrainDoors(openAmount) {
+      // openAmount: 0 (closed) to 1.45 (slid open)
+      trainLeftDoors.forEach((d) => {
+        d.leafA.position.z = d.baseZA - openAmount;
+        d.leafB.position.z = d.baseZB + openAmount;
+      });
+    }
+
+    function beginTrainTransitSequence() {
+      if (gameState.stationIndex >= STATIONS.length - 1) {
+        // Player cleared all 5 stations and boarded extraction train!
+        triggerEndScreen(true);
+        return;
+      }
+
+      gameState.mode = 'TRANSIT';
+      gameState.trainState = 'DEPARTING';
+      gameState.transitCountdown = 4.5;
+      sound.playDoorChime();
+
+      // Apply Transit Resupply
+      player.hp = Math.min(player.maxHp, player.hp + 50);
+      player.medkits = Math.min(5, player.medkits + 1);
+      player.weapons.forEach((w) => {
+        w.mag = w.def.magSize;
+        w.reserve = w.def.maxReserve;
+      });
+      gameState.score += 1000;
+
+      const curSt = STATIONS[gameState.stationIndex];
+      const nextSt = STATIONS[gameState.stationIndex + 1];
+      document.getElementById('transit-title').textContent = `SECTOR 0${curSt.id} CLEARED`;
+      document.getElementById('transit-subtitle').textContent = `NEXT STOP: STATION 0${nextSt.id} — ${nextSt.name}`;
+      document.getElementById('transit-threat-desc').textContent = nextSt.briefing;
+      document.getElementById('hud-interact-prompt').classList.add('hidden');
+      document.getElementById('train-transition-ui').classList.remove('hidden');
+      document.getElementById('train-transition-ui').classList.add('flex');
+    }
+
+    function completeTrainTransit() {
+      document.getElementById('train-transition-ui').classList.add('hidden');
+      document.getElementById('train-transition-ui').classList.remove('flex');
+      gameState.mode = 'PLAYING';
+      startStation(gameState.stationIndex + 1);
+      requestGamePointerLock();
+    }
+
+    // =========================================================================
+    // 11. COLLISION DETECTION & PLAYER MOVEMENT PHYSICS
+    // =========================================================================
+    function resolveWorldCollisions(pos, radius) {
+      // Platform bounds: West wall x = -15.4
+      if (pos.x - radius < -15.4) pos.x = -15.4 + radius;
+      if (pos.z - radius < -46.8) pos.z = -46.8 + radius;
+      if (pos.z + radius > 46.8) pos.z = 46.8 - radius;
+
+      // Track edge & Train boarding logic:
+      // Platform edge is at x = 6.5.
+      // When trainState === 'BOARDING' or 'DEPARTING', the player can walk across the open door portals
+      // at z in [-12.3, -9.7], [-1.3, 1.3], or [9.7, 12.3] into the train car (x up to 13.0)!
+      const canBoard = (gameState.trainState === 'BOARDING' || gameState.trainState === 'DEPARTING');
+      const inDoorZone =
+        (Math.abs(pos.z - 0) < 1.55) ||
+        (Math.abs(pos.z - 11) < 1.55) ||
+        (Math.abs(pos.z + 11) < 1.55);
+
+      if (!canBoard) {
+        if (pos.x + radius > 6.45) pos.x = 6.45 - radius;
+      } else {
+        // If inside the train (x > 8.8), keep inside train interior bounds
+        if (pos.x > 8.8) {
+          if (pos.x + radius > 13.0) pos.x = 13.0 - radius;
+          if (pos.z - radius < -18.2) pos.z = -18.2 + radius;
+          if (pos.z + radius > 18.2) pos.z = 18.2 - radius;
+          if (!inDoorZone && pos.x - radius < 9.25) {
+            pos.x = 9.25 + radius;
+          }
+        } else {
+          // On platform side: block crossing x = 8.8 unless aligned with open train doors
+          if (!inDoorZone && pos.x + radius > 6.45) {
+            pos.x = 6.45 - radius;
+          }
+        }
+      }
+
+      // Check static station obstacle AABBs (pillars, benches, vending kiosks)
+      for (let i = 0; i < colliders.length; i++) {
+        const c = colliders[i];
+        const closestX = Math.max(c.minX, Math.min(pos.x, c.maxX));
+        const closestZ = Math.max(c.minZ, Math.min(pos.z, c.maxZ));
+        const dx = pos.x - closestX;
+        const dz = pos.z - closestZ;
+        const distSq = dx * dx + dz * dz;
+        if (distSq < radius * radius && distSq > 0.00001) {
+          const dist = Math.sqrt(distSq);
+          const overlap = radius - dist;
+          pos.x += (dx / dist) * overlap;
+          pos.z += (dz / dist) * overlap;
+        }
+      }
+    }
+
+    function triggerScreenShake(intensity, duration) {
+      player.shakeIntensity = intensity;
+      player.shakeTimer = duration;
+    }
+
+    function damagePlayer(amount) {
+      if (gameState.mode !== 'PLAYING') return;
+      player.hp = Math.max(0, player.hp - amount);
+      sound.playPlayerHurt();
+      triggerScreenShake(0.08, 0.22);
+
+      const dv = document.getElementById('damage-vignette');
+      dv.style.opacity = '1';
+      setTimeout(() => {
+        dv.style.opacity = player.hp < 30 ? '0.45' : '0';
+      }, 180);
+
+      updateHUD();
+      if (player.hp <= 0) {
+        triggerEndScreen(false);
+      }
+    }
+
+    // =========================================================================
+    // 12. HUD, RADAR & UI UPDATERS
+    // =========================================================================
+    const radarCanvas = document.getElementById('radar-canvas');
+    const radarCtx = radarCanvas.getContext('2d');
+    let hitmarkerTimeout = null;
+    let toastTimeout = null;
+
+    function showHitmarker(isCrit) {
+      const hm = document.getElementById('hitmarker');
+      hm.querySelectorAll('.hm-line').forEach((line) => {
+        line.style.background = isCrit ? '#f43f5e' : '#ffffff';
+        line.style.boxShadow = isCrit ? '0 0 8px #f43f5e' : '0 0 6px #ffffff';
+      });
+      hm.style.opacity = '1';
+      hm.style.transform = `translate(-50%, -50%) scale(${isCrit ? 1.2 : 1.0})`;
+      if (hitmarkerTimeout) clearTimeout(hitmarkerTimeout);
+      hitmarkerTimeout = setTimeout(() => {
+        hm.style.opacity = '0';
+        hm.style.transform = 'translate(-50%, -50%) scale(0.8)';
+      }, 90);
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('hud-toast');
+      el.textContent = msg;
+      el.classList.remove('opacity-0', '-translate-y-2');
+      el.classList.add('opacity-100', 'translate-y-0');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        el.classList.remove('opacity-100', 'translate-y-0');
+        el.classList.add('opacity-0', '-translate-y-2');
+      }, 2800);
+    }
+
+    function updateDynamicCrosshair(spreadPx) {
+      const offset = Math.min(18, Math.round(spreadPx));
+      document.getElementById('ch-top').style.transform = `translateY(${-offset}px)`;
+      document.getElementById('ch-bottom').style.transform = `translateY(${offset}px)`;
+      document.getElementById('ch-left').style.transform = `translateX(${-offset}px)`;
+      document.getElementById('ch-right').style.transform = `translateX(${offset}px)`;
+    }
+
+    function updateHUD() {
+      const st = STATIONS[gameState.stationIndex];
+      document.getElementById('hud-station-num').textContent = `STATION 0${st.id} / 0${STATIONS.length}`;
+      document.getElementById('hud-station-name').textContent = st.name;
+      document.getElementById('hud-wave').textContent = `${gameState.waveIndex + 1} / ${st.waves.length}`;
+
+      const aliveHostiles = activeZombies.filter((z) => !z.dead).length + gameState.waveQueue.length;
+      document.getElementById('hud-enemies').textContent = aliveHostiles;
+      document.getElementById('hud-score').textContent = gameState.score.toLocaleString();
+      document.getElementById('hud-perf-badge').textContent =
+        `${gameState.currentFps} FPS • ${GRAPHICS_PRESETS[gameState.graphics].name}`;
+
+      // Health & Stamina
+      const hpPct = Math.max(0, Math.round((player.hp / player.maxHp) * 100));
+      const hpNumEl = document.getElementById('hud-hp-num');
+      hpNumEl.textContent = hpPct;
+      hpNumEl.className = hpPct <= 30
+        ? 'text-2xl font-bold font-mono-tech text-rose-500 pulse-danger'
+        : 'text-2xl font-bold font-mono-tech text-emerald-400';
+      document.getElementById('hud-hp-bar').style.width = `${hpPct}%`;
+
+      const stamPct = Math.max(0, Math.round((player.stamina / player.maxStamina) * 100));
+      document.getElementById('hud-stamina-num').textContent = `${stamPct}%`;
+      document.getElementById('hud-stamina-bar').style.width = `${stamPct}%`;
+      document.getElementById('hud-medkits').textContent = player.medkits;
+
+      // Weapon & Ammo
+      const curW = player.weapons[player.currentWeaponIdx];
+      document.getElementById('hud-weapon-type').textContent = curW.def.typeLabel;
+      document.getElementById('hud-weapon-name').textContent = curW.def.name;
+      document.getElementById('hud-ammo-mag').textContent = curW.mag;
+      document.getElementById('hud-ammo-res').textContent = curW.reserve;
+
+      const lowAmmoWarn = document.getElementById('hud-ammo-warn');
+      if (curW.mag <= Math.ceil(curW.def.magSize * 0.25) && !player.isReloading) {
+        lowAmmoWarn.classList.remove('hidden');
+      } else {
+        lowAmmoWarn.classList.add('hidden');
+      }
+
+      // Weapon Slots highlight
+      for (let i = 0; i < 4; i++) {
+        const el = document.getElementById(`slot-${i + 1}`);
+        if (i === player.currentWeaponIdx) {
+          el.className = 'px-2 py-1 rounded-sm border border-cyan-400 bg-cyan-500/25 text-white text-center';
+        } else {
+          el.className = 'px-2 py-1 rounded-sm border border-slate-700 bg-slate-900/70 text-slate-400 text-center';
+        }
+      }
+
+      // Boss Bar Check
+      const activeBoss = activeZombies.find((z) => !z.dead && z.def.isBoss);
+      const bossBox = document.getElementById('hud-boss-box');
+      if (activeBoss) {
+        bossBox.classList.remove('hidden');
+        document.getElementById('hud-boss-hp-text').textContent =
+          `${Math.max(0, Math.ceil(activeBoss.hp))} / ${activeBoss.maxHp}`;
+        document.getElementById('hud-boss-bar').style.width =
+          `${Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100)}%`;
+      } else {
+        bossBox.classList.add('hidden');
+      }
+    }
+
+    function renderBioRadar() {
+      const w = radarCanvas.width;
+      const h = radarCanvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = 1.9;
+
+      radarCtx.fillStyle = '#050811';
+      radarCtx.fillRect(0, 0, w, h);
+
+      // Radar rings
+      radarCtx.strokeStyle = 'rgba(34, 211, 238, 0.22)';
+      radarCtx.lineWidth = 1;
+      [22, 44].forEach((r) => {
+        radarCtx.beginPath();
+        radarCtx.arc(cx, cy, r, 0, Math.PI * 2);
+        radarCtx.stroke();
+      });
+
+      // Player view cone
+      radarCtx.fillStyle = 'rgba(34, 211, 238, 0.12)';
+      radarCtx.beginPath();
+      radarCtx.moveTo(cx, cy);
+      radarCtx.arc(cx, cy, 48, -Math.PI * 0.72, -Math.PI * 0.28);
+      radarCtx.closePath();
+      radarCtx.fill();
+
+      const cosY = Math.cos(player.yaw);
+      const sinY = Math.sin(player.yaw);
+
+      // Draw Supply Crates (Green squares)
+      supplyCrates.forEach((c) => {
+        if (!c.active) return;
+        const dx = c.x - player.pos.x;
+        const dz = c.z - player.pos.z;
+        const rx = (dx * cosY - dz * sinY) * scale;
+        const ry = (dx * sinY + dz * cosY) * scale;
+        if (rx * rx + ry * ry < 52 * 52) {
+          radarCtx.fillStyle = '#10b981';
+          radarCtx.fillRect(cx + rx - 2, cy + ry - 2, 4, 4);
+        }
+      });
+
+      // Draw Train Door Beacon when Boarding (Cyan pulsing diamond)
+      if (gameState.trainState === 'BOARDING') {
+        const dx = 9.2 - player.pos.x;
+        const dz = 0 - player.pos.z;
+        const rx = Math.max(-50, Math.min(50, (dx * cosY - dz * sinY) * scale));
+        const ry = Math.max(-50, Math.min(50, (dx * sinY + dz * cosY) * scale));
+        radarCtx.fillStyle = '#22d3ee';
+        radarCtx.beginPath();
+        radarCtx.arc(cx + rx, cy + ry, 4.5, 0, Math.PI * 2);
+        radarCtx.fill();
+      }
+
+      // Draw Active Zombies (Red/Amber dots)
+      activeZombies.forEach((z) => {
+        if (z.dead) return;
+        const dx = z.root.position.x - player.pos.x;
+        const dz = z.root.position.z - player.pos.z;
+        const rx = Math.max(-52, Math.min(52, (dx * cosY - dz * sinY) * scale));
+        const ry = Math.max(-52, Math.min(52, (dx * sinY + dz * cosY) * scale));
+        radarCtx.fillStyle = z.def.isBoss ? '#f43f5e' : (z.def.armored ? '#f59e0b' : '#ef4444');
+        radarCtx.beginPath();
+        radarCtx.arc(cx + rx, cy + ry, z.def.isBoss ? 4.5 : 2.8, 0, Math.PI * 2);
+        radarCtx.fill();
+      });
+
+      // Player center dot
+      radarCtx.fillStyle = '#ffffff';
+      radarCtx.beginPath();
+      radarCtx.arc(cx, cy, 3, 0, Math.PI * 2);
+      radarCtx.fill();
+    }
+
+    // =========================================================================
+    // 13. MAIN GAME LOOP (UPDATE & RENDER)
+    // =========================================================================
+    let lastTime = performance.now();
+
+    function updateGame(dt) {
+      // 1. Update Flickering Subway Lights & Rotating Emergency Beacons
+      const nowSec = performance.now() * 0.001;
+      for (let i = 0; i < lightFixtures.length; i++) {
+        const lf = lightFixtures[i];
+        const flicker = Math.sin(nowSec * 17 + lf.phase) * Math.sin(nowSec * 5.3 + lf.phase);
+        lf.mesh.material = flicker > 0.72 ? MAT.lightOff : MAT.lightBulb;
+      }
+      for (let i = 0; i < emergencyFixtures.length; i++) {
+        const ef = emergencyFixtures[i];
+        const pulse = 0.55 + 0.45 * Math.sin(nowSec * 6.0 + ef.phase);
+        ef.mesh.scale.setScalar(0.85 + pulse * 0.3);
+      }
+
+      // If in Main Menu, slowly orbit camera down the atmospheric subway platform
+      if (gameState.mode === 'MENU') {
+        camera.position.set(
+          -3.5 + Math.sin(nowSec * 0.35) * 2.5,
+          2.6 + Math.cos(nowSec * 0.25) * 0.3,
+          18.0 + Math.cos(nowSec * 0.2) * 10.0
+        );
+        camera.lookAt(-2.0, 1.8, -20.0);
+        return;
+      }
+
+      // If in Train Transit sequence between stations
+      if (gameState.mode === 'TRANSIT') {
+        gameState.trainZ += dt * 42;
+        if (gameState.trainZ > 35) gameState.trainZ = -35;
+        trainGroup.position.z = gameState.trainZ;
+
+        // Keep player camera inside the moving train cabin
+        camera.position.set(11.0, 1.7 + Math.sin(nowSec * 14) * 0.03, gameState.trainZ);
+        camera.rotation.set(0, Math.PI * 0.5, 0);
+
+        gameState.transitCountdown -= dt;
+        document.getElementById('transit-timer').textContent =
+          `ARRIVING IN ${Math.max(0, gameState.transitCountdown).toFixed(1)}s`;
+        if (gameState.transitCountdown <= 0) {
+          completeTrainTransit();
+        }
+        return;
+      }
+
+      if (gameState.mode !== 'PLAYING') return;
+
+      // 2. Player Movement, Sprint, Stamina & Jump
+      const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+      const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+      const moveInput = new THREE.Vector3();
+
+      if (keys['KeyW'] || keys['ArrowUp']) moveInput.add(forward);
+      if (keys['KeyS'] || keys['ArrowDown']) moveInput.sub(forward);
+      if (keys['KeyD'] || keys['ArrowRight']) moveInput.add(right);
+      if (keys['KeyA'] || keys['ArrowLeft']) moveInput.sub(right);
+
+      const isMoving = moveInput.lengthSq() > 0.001;
+      if (isMoving) moveInput.normalize();
+
+      const wantsSprint = (keys['ShiftLeft'] || keys['ShiftRight']) && isMoving && !player.isAiming;
+      if (wantsSprint && player.stamina > 2) {
+        player.isSprinting = true;
+        player.stamina = Math.max(0, player.stamina - 22 * dt);
+      } else {
+        player.isSprinting = false;
+        player.stamina = Math.min(player.maxStamina, player.stamina + 16 * dt);
+      }
+
+      const baseSpeed = player.isSprinting ? 9.4 : (player.isAiming ? 4.2 : 6.4);
+      player.vel.x = moveInput.x * baseSpeed;
+      player.vel.z = moveInput.z * baseSpeed;
+
+      // Jump & Gravity
+      if (keys['Space'] && player.onGround) {
+        player.vel.y = 6.6;
+        player.onGround = false;
+      }
+      player.vel.y -= 18.0 * dt;
+
+      player.pos.x += player.vel.x * dt;
+      player.pos.z += player.vel.z * dt;
+      player.pos.y += player.vel.y * dt;
+
+      if (player.pos.y <= player.eyeHeight) {
+        player.pos.y = player.eyeHeight;
+        player.vel.y = 0;
+        player.onGround = true;
+      }
+
+      resolveWorldCollisions(player.pos, player.radius);
+
+      // Check Supply Crate Pickup
+      supplyCrates.forEach((crate) => {
+        if (!crate.active) {
+          crate.cooldown -= dt;
+          if (crate.cooldown <= 0) {
+            crate.active = true;
+            crate.group.visible = true;
+          }
+          return;
+        }
+        crate.group.rotation.y += dt * 1.4;
+        const dx = player.pos.x - crate.x;
+        const dz = player.pos.z - crate.z;
+        if (dx * dx + dz * dz < 2.1 * 2.1) {
+          // Resupply ammo & slight heal
+          let used = false;
+          player.weapons.forEach((w) => {
+            if (w.reserve < w.def.maxReserve) {
+              w.reserve = Math.min(w.def.maxReserve, w.reserve + w.def.magSize * 2);
+              used = true;
+            }
+          });
+          if (player.hp < player.maxHp) {
+            player.hp = Math.min(player.maxHp, player.hp + 15);
+            used = true;
+          }
+          if (used) {
+            crate.active = false;
+            crate.cooldown = 22.0; // Respawns after 22s
+            crate.group.visible = false;
+            sound.playReload();
+            showToast('SUPPLY CRATE COLLECTED (+AMMO & +15 HP)');
+            updateHUD();
+          }
+        }
+      });
+
+      // 3. Camera Aim, FOV, Headbob, Recoil & Screen Shake
+      const targetFov = player.isAiming ? 54 : (player.isSprinting ? 81 : 75);
+      camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 12);
+      camera.updateProjectionMatrix();
+
+      if (isMoving && player.onGround) {
+        player.bobPhase += dt * (player.isSprinting ? 14 : 9.5);
+      } else {
+        player.bobPhase += dt * 1.8;
+      }
+
+      const bobY = isMoving ? Math.sin(player.bobPhase) * (player.isSprinting ? 0.065 : 0.038) : Math.sin(player.bobPhase) * 0.008;
+      const bobX = isMoving ? Math.cos(player.bobPhase * 0.5) * 0.03 : 0;
+
+      player.recoilPitch = Math.max(0, player.recoilPitch - dt * 0.32);
+      player.recoilZ = Math.max(0, player.recoilZ - dt * 0.85);
+
+      let shakeX = 0, shakeY = 0;
+      if (player.shakeTimer > 0) {
+        player.shakeTimer -= dt;
+        shakeX = (Math.random() - 0.5) * player.shakeIntensity;
+        shakeY = (Math.random() - 0.5) * player.shakeIntensity;
+      }
+
+      camera.position.set(
+        player.pos.x + shakeX,
+        player.pos.y + bobY + shakeY,
+        player.pos.z
+      );
+      camera.rotation.y = player.yaw;
+      camera.rotation.x = Math.max(-1.45, Math.min(1.45, player.pitch + player.recoilPitch));
+
+      // Update 3D Weapon Viewmodel Rig position & reload tilt
+      const targetRigX = player.isAiming ? 0.0 : 0.25 + bobX * 0.6;
+      const targetRigY = (player.isAiming ? -0.175 : -0.24) + bobY * 0.5 - (player.isReloading ? 0.16 : 0);
+      const targetRigZ = -0.35 + player.recoilZ;
+      weaponRig.position.x += (targetRigX - weaponRig.position.x) * Math.min(1, dt * 16);
+      weaponRig.position.y += (targetRigY - weaponRig.position.y) * Math.min(1, dt * 16);
+      weaponRig.position.z = targetRigZ;
+      weaponRig.rotation.x = player.isReloading ? -0.55 : player.recoilPitch * 1.5;
+      weaponRig.rotation.z = player.isReloading ? 0.38 : -bobX * 1.2;
+
+      // Crosshair spread feedback
+      const curDef = player.weapons[player.currentWeaponIdx].def;
+      const spreadPx = (curDef.spread * 160 + (isMoving ? 4 : 0) + player.recoilZ * 45) * (player.isAiming ? 0.45 : 1);
+      updateDynamicCrosshair(spreadPx);
+
+      // 4. Weapon Firing & Reload Timer
+      if (player.fireCooldown > 0) player.fireCooldown -= dt;
+      if (player.isReloading) {
+        player.reloadTimer -= dt;
+        const pct = Math.min(100, Math.round((1 - player.reloadTimer / curDef.reloadTime) * 100));
+        document.getElementById('hud-reload-pct').textContent = `${pct}%`;
+        document.getElementById('hud-reload-bar').style.width = `${pct}%`;
+
+        if (player.reloadTimer <= 0) {
+          const w = player.weapons[player.currentWeaponIdx];
+          const needed = w.def.magSize - w.mag;
+          const take = Math.min(needed, w.reserve);
+          w.mag += take;
+          w.reserve -= take;
+          player.isReloading = false;
+          document.getElementById('hud-reload-box').classList.add('hidden');
+          updateHUD();
+        }
+      } else if (mouseDownLeft) {
+        if (curDef.auto) {
+          fireCurrentWeapon();
+        }
+      }
+
+      // 5. Update Pooled Tracers, Rockets & Particles
+      for (let i = 0; i < tracerPool.length; i++) {
+        const t = tracerPool[i];
+        if (t.life > 0) {
+          t.life -= dt;
+          t.mesh.material.opacity = Math.max(0, t.life / t.maxLife);
+          if (t.life <= 0) t.mesh.visible = false;
+        }
+      }
+
+      for (let i = 0; i < rocketPool.length; i++) {
+        const r = rocketPool[i];
+        if (!r.active) continue;
+        r.life -= dt;
+        const nextPos = r.pos.clone().addScaledVector(r.vel, dt);
+
+        // Smoke trail particle
+        if (Math.random() < 0.65) {
+          spawnParticles(r.pos, 0x94a3b8, 1, 0.8, 0.09, 0.25);
+        }
+
+        // Check proximity to zombies or walls
+        let hit = false;
+        for (let zIdx = 0; zIdx < activeZombies.length; zIdx++) {
+          const z = activeZombies[zIdx];
+          if (z.dead) continue;
+          const zPos = z.root.position.clone();
+          zPos.y += 1.0;
+          if (zPos.distanceTo(nextPos) < 1.15 * z.def.scale) {
+            hit = true;
+            break;
+          }
+        }
+        if (
+          nextPos.y <= 0.1 ||
+          nextPos.y >= 6.8 ||
+          nextPos.x <= -15.5 ||
+          nextPos.x >= 16.0 ||
+          Math.abs(nextPos.z) >= 47.0 ||
+          r.life <= 0
+        ) {
+          hit = true;
+        }
+
+        r.pos.copy(nextPos);
+        r.group.position.copy(r.pos);
+
+        if (hit) {
+          r.active = false;
+          r.group.visible = false;
+          detonateRocket(r.pos);
+        }
+      }
+
+      for (let i = 0; i < particlePool.length; i++) {
+        const p = particlePool[i];
+        if (!p.active) continue;
+        p.life -= dt;
+        if (p.life <= 0) {
+          p.active = false;
+          p.mesh.visible = false;
+          continue;
+        }
+        p.vel.y -= p.gravity * dt;
+        p.mesh.position.addScaledVector(p.vel, dt);
+        if (p.mesh.position.y < 0.04) {
+          p.mesh.position.y = 0.04;
+          p.vel.x *= 0.7;
+          p.vel.z *= 0.7;
+          p.vel.y = 0;
+        }
+      }
+
+      // 6. Wave Spawner & Active Zombies AI Update
+      const maxActive = GRAPHICS_PRESETS[gameState.graphics].maxZombiesActive;
+      const st = STATIONS[gameState.stationIndex];
+      const waveCfg = st.waves[gameState.waveIndex];
+
+      if (gameState.waveQueue.length > 0 && activeZombies.length < maxActive) {
+        gameState.spawnTimer -= dt;
+        if (gameState.spawnTimer <= 0) {
+          const nextType = gameState.waveQueue.shift();
+          const stationMult = 1 + gameState.stationIndex * 0.14;
+          const z = createZombieInstance(nextType, stationMult);
+          const sp = ZOMBIE_SPAWN_POINTS[Math.floor(Math.random() * ZOMBIE_SPAWN_POINTS.length)];
+          z.root.position.set(
+            sp.x + (Math.random() - 0.5) * 2.0,
+            0,
+            sp.z + (Math.random() - 0.5) * 2.0
+          );
+          activeZombies.push(z);
+          gameState.spawnTimer = waveCfg.spawnInterval;
+          if (nextType === 'boss') {
+            sound.playZombieGroan(true);
+            showToast('⚠ WARNING: MUTANT BOSS ENTERED THE PLATFORM!');
+          }
+          updateHUD();
+        }
+      }
+
+      for (let i = activeZombies.length - 1; i >= 0; i--) {
+        const z = activeZombies[i];
+
+        if (z.dead) {
+          z.deathTimer -= dt;
+          z.root.rotation.x = Math.min(Math.PI * 0.5, (0.45 - z.deathTimer) * 3.5);
+          z.root.position.y = Math.max(-0.4, z.root.position.y - dt * 0.8);
+          if (z.deathTimer <= 0) {
+            removeZombie(z);
+            activeZombies.splice(i, 1);
+            updateHUD();
+            // Check if wave is completely cleared
+            if (activeZombies.length === 0 && gameState.waveQueue.length === 0 && gameState.trainState === 'AWAY') {
+              onWaveCleared();
+            }
+          }
+          continue;
+        }
+
+        // Recover hit flash color
+        if (z.hitFlashTimer > 0) {
+          z.hitFlashTimer -= dt;
+          if (z.hitFlashTimer <= 0) {
+            z.skinMat.color.setHex(z.def.skinColor);
+            z.shirtMat.color.setHex(z.def.shirtColor);
+          }
+        }
+
+        // Periodic ambient zombie groan
+        z.groanTimer -= dt;
+        if (z.groanTimer <= 0) {
+          z.groanTimer = 5 + Math.random() * 7;
+          if (z.root.position.distanceTo(player.pos) < 22) {
+            sound.playZombieGroan(z.def.isBoss);
+          }
+        }
+
+        // Chase Player AI with obstacle steering
+        const toPlayer = new THREE.Vector3(
+          player.pos.x - z.root.position.x,
+          0,
+          player.pos.z - z.root.position.z
+        );
+        const dist = toPlayer.length();
+
+        if (dist > 0.01) {
+          toPlayer.divideScalar(dist);
+
+          // Runner zig-zag weave
+          if (z.typeKey === 'runner' && dist > 3.0) {
+            const perp = new THREE.Vector3(-toPlayer.z, 0, toPlayer.x);
+            toPlayer.addScaledVector(perp, Math.sin(nowSec * 6 + z.animPhase) * 0.38).normalize();
+          }
+
+          // Face player
+          z.root.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+
+          if (dist > z.def.attackRange * 0.82) {
+            z.root.position.x += toPlayer.x * z.speed * dt;
+            z.root.position.z += toPlayer.z * z.speed * dt;
+
+            // Keep zombies on the platform and out of pillars
+            resolveWorldCollisions(z.root.position, 0.42 * z.def.scale);
+            if (z.root.position.x > 6.1) z.root.position.x = 6.1;
+          }
+        }
+
+        // Zombie Walk & Attack Limb Animation
+        z.animPhase += dt * z.speed * 2.4;
+        const swing = Math.sin(z.animPhase) * 0.55;
+        z.leftLeg.rotation.x = swing;
+        z.rightLeg.rotation.x = -swing;
+
+        // Attack Player when within range
+        if (z.attackCooldown > 0) z.attackCooldown -= dt;
+        if (dist <= z.def.attackRange && z.attackCooldown <= 0) {
+          z.attackCooldown = z.def.attackRate;
+          z.leftArm.rotation.x = -0.8;
+          z.rightArm.rotation.x = -0.8;
+          damagePlayer(z.def.damage);
+        } else {
+          const armWave = Math.sin(z.animPhase * 0.7) * 0.18;
+          z.leftArm.rotation.x = armWave;
+          z.rightArm.rotation.x = -armWave;
+        }
+      }
+
+      // 7. Wave Cooldown Timer between waves
+      if (gameState.waveCooldownTimer > 0) {
+        gameState.waveCooldownTimer -= dt;
+        if (gameState.waveCooldownTimer <= 0) {
+          startWave(gameState.waveIndex + 1);
+        }
+      }
+
+      // 8. Subway Train Arrival, Door Opening & Player Boarding Detection
+      if (gameState.trainState === 'ARRIVING') {
+        // Smoothly decelerate train into station platform at z = 0
+        const distToStop = 0 - gameState.trainZ;
+        const step = Math.max(4.5, distToStop * 1.8) * dt;
+        gameState.trainZ = Math.min(0, gameState.trainZ + step);
+        trainGroup.position.z = gameState.trainZ;
+
+        if (Math.abs(gameState.trainZ) < 0.08) {
+          gameState.trainZ = 0;
+          trainGroup.position.z = 0;
+          gameState.trainState = 'BOARDING';
+          trainBoardingBeacon.visible = true;
+          sound.playDoorChime();
+          showToast('TRAIN DOORS OPEN! BOARD THE SUBWAY TRAIN ON THE TRACKS');
+          document.getElementById('hud-objective-text').textContent =
+            'ENTER ANY OPEN SUBWAY TRAIN DOOR (OR PRESS [E] AT DOORS) TO DEPART';
+          const promptEl = document.getElementById('hud-interact-prompt');
+          promptEl.textContent = '▶ WALK INSIDE OPEN TRAIN DOORS OR PRESS [E] AT TRACK EDGE TO DEPART ◀';
+          promptEl.classList.remove('hidden');
+        }
+      } else if (gameState.trainState === 'BOARDING') {
+        if (gameState.trainDoorOpenAmt < 1.42) {
+          gameState.trainDoorOpenAmt = Math.min(1.42, gameState.trainDoorOpenAmt + dt * 1.8);
+          updateTrainDoors(gameState.trainDoorOpenAmt);
+        }
+        trainBoardingBeacon.position.y = 0.02 + Math.sin(nowSec * 6) * 0.02;
+
+        // Check if player walked inside the train cabin (x > 8.5) or pressed [E] near open train doors
+        if (
+          (player.pos.x > 8.5 && Math.abs(player.pos.z) < 15.0) ||
+          (keys['KeyE'] && player.pos.x > 4.2 && Math.abs(player.pos.z) < 15.0)
+        ) {
+          beginTrainTransitSequence();
+        }
+      }
+
+      // 9. Update Bio-Radar
+      renderBioRadar();
+    }
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, Math.max(0.001, (now - lastTime) / 1000));
+      lastTime = now;
+
+      // Track FPS
+      gameState.fpsFrames++;
+      if (now - gameState.fpsTime >= 500) {
+        gameState.currentFps = Math.min(60, Math.round((gameState.fpsFrames * 1000) / (now - gameState.fpsTime)));
+        gameState.fpsFrames = 0;
+        gameState.fpsTime = now;
+        if (gameState.mode === 'PLAYING') {
+          document.getElementById('hud-perf-badge').textContent =
+            `${gameState.currentFps} FPS • ${GRAPHICS_PRESETS[gameState.graphics].name}`;
+        }
+      }
+
+      updateGame(dt);
+      renderer.render(scene, camera);
+    }
+
+    // =========================================================================
+    // 14. MENUS, POINTER LOCK & INPUT EVENT LISTENERS
+    // =========================================================================
+    function requestGamePointerLock() {
+      try {
+        if (canvas.requestPointerLock) {
+          canvas.requestPointerLock();
+        }
+      } catch (e) {}
+    }
+
+    function startNewGame(stationIdx = 0) {
+      sound.init();
+      player.hp = player.maxHp;
+      player.stamina = player.maxStamina;
+      player.medkits = 2;
+      player.weapons.forEach((w) => {
+        w.mag = w.def.magSize;
+        w.reserve = w.def.maxReserve;
+      });
+      switchWeapon(0);
+
+      gameState.score = 0;
+      gameState.kills = 0;
+      gameState.headshots = 0;
+      gameState.mode = 'PLAYING';
+
+      document.getElementById('main-menu').classList.add('hidden');
+      document.getElementById('pause-menu').classList.add('hidden');
+      document.getElementById('pause-menu').classList.remove('flex');
+      document.getElementById('end-screen').classList.add('hidden');
+      document.getElementById('end-screen').classList.remove('flex');
+      document.getElementById('hud-layer').classList.remove('hidden');
+      document.getElementById('damage-vignette').style.opacity = '0';
+
+      startStation(stationIdx);
+      updateHUD();
+      requestGamePointerLock();
+    }
+
+    function pauseGame() {
+      if (gameState.mode !== 'PLAYING') return;
+      gameState.mode = 'PAUSED';
+      mouseDownLeft = false;
+      if (document.pointerLockElement) {
+        try { document.exitPointerLock(); } catch (e) {}
+      }
+      document.getElementById('pause-menu').classList.remove('hidden');
+      document.getElementById('pause-menu').classList.add('flex');
+    }
+
+    function resumeGame() {
+      if (gameState.mode !== 'PAUSED') return;
+      gameState.mode = 'PLAYING';
+      document.getElementById('pause-menu').classList.add('hidden');
+      document.getElementById('pause-menu').classList.remove('flex');
+      requestGamePointerLock();
+    }
+
+    function triggerEndScreen(isVictory) {
+      gameState.mode = 'ENDED';
+      mouseDownLeft = false;
+      if (document.pointerLockElement) {
+        try { document.exitPointerLock(); } catch (e) {}
+      }
+      document.getElementById('hud-interact-prompt').classList.add('hidden');
+
+      const badge = document.getElementById('end-badge');
+      const title = document.getElementById('end-title');
+      const sub = document.getElementById('end-subtitle');
+      const retryBtn = document.getElementById('btn-end-retry');
+
+      if (isVictory) {
+        badge.className = 'inline-block px-3 py-1 text-xs font-mono-tech font-bold uppercase tracking-widest bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 mb-2';
+        badge.textContent = 'EXTRACTION COMPLETE // ALL 5 SECTORS CLEARED';
+        title.textContent = 'SURVIVED THE METRO';
+        sub.textContent = 'You fought through all 5 underground subway stations and boarded the surface extraction train!';
+        retryBtn.textContent = '▶ PLAY AGAIN FROM STATION 01';
+      } else {
+        badge.className = 'inline-block px-3 py-1 text-xs font-mono-tech font-bold uppercase tracking-widest bg-rose-500/20 border border-rose-500/50 text-rose-300 mb-2';
+        badge.textContent = 'SIGNAL LOST // OPERATOR DOWN';
+        title.textContent = 'OVERWHELMED IN THE TUNNELS';
+        sub.textContent = `You fell defending Station 0${STATIONS[gameState.stationIndex].id}: ${STATIONS[gameState.stationIndex].name}.`;
+        retryBtn.textContent = `↻ REDEPLOY AT STATION 0${STATIONS[gameState.stationIndex].id}`;
+      }
+
+      document.getElementById('end-stat-station').textContent = `0${STATIONS[gameState.stationIndex].id} / 0${STATIONS.length}`;
+      document.getElementById('end-stat-score').textContent = gameState.score.toLocaleString();
+      document.getElementById('end-stat-kills').textContent = gameState.kills;
+      document.getElementById('end-stat-headshots').textContent = gameState.headshots;
+
+      document.getElementById('end-screen').classList.remove('hidden');
+      document.getElementById('end-screen').classList.add('flex');
+    }
+
+    // Pointer lock & mouse events
+    document.addEventListener('pointerlockchange', () => {
+      pointerLocked = (document.pointerLockElement === canvas);
+      if (!pointerLocked && gameState.mode === 'PLAYING') {
+        pauseGame();
+      }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (gameState.mode !== 'PLAYING') return;
+      if (!pointerLocked && !mouseDownLeft) return;
+      const sens = 0.0022 * gameState.sensitivity * (player.isAiming ? 0.6 : 1.0);
+      player.yaw -= e.movementX * sens;
+      player.pitch = Math.max(-1.42, Math.min(1.42, player.pitch - e.movementY * sens));
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (gameState.mode !== 'PLAYING') return;
+      if (!pointerLocked) {
+        requestGamePointerLock();
+      }
+      if (e.button === 0) {
+        mouseDownLeft = true;
+        fireCurrentWeapon();
+      } else if (e.button === 2) {
+        player.isAiming = true;
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (e.button === 0) mouseDownLeft = false;
+      if (e.button === 2) player.isAiming = false;
+    });
+
+    window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    window.addEventListener('wheel', (e) => {
+      if (gameState.mode !== 'PLAYING') return;
+      const dir = e.deltaY > 0 ? 1 : -1;
+      const next = (player.currentWeaponIdx + dir + player.weapons.length) % player.weapons.length;
+      switchWeapon(next);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+
+      if (e.code === 'KeyP' || e.code === 'Escape') {
+        if (gameState.mode === 'PLAYING') {
+          pauseGame();
+        } else if (gameState.mode === 'PAUSED') {
+          resumeGame();
+        }
+        return;
+      }
+
+      if (gameState.mode !== 'PLAYING') return;
+
+      if (e.code === 'Digit1') switchWeapon(0);
+      if (e.code === 'Digit2') switchWeapon(1);
+      if (e.code === 'Digit3') switchWeapon(2);
+      if (e.code === 'Digit4') switchWeapon(3);
+      if (e.code === 'KeyR') startReload();
+      if (e.code === 'KeyH') useMedkit();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      keys[e.code] = false;
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // UI Button Bindings
+    document.querySelectorAll('.gfx-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        applyGraphicsPreset(btn.getAttribute('data-gfx'));
+      });
+    });
+
+    const sensSlider = document.getElementById('sens-slider');
+    const pauseSensSlider = document.getElementById('pause-sens-slider');
+    function syncSensitivity(val) {
+      gameState.sensitivity = parseFloat(val);
+      sensSlider.value = val;
+      pauseSensSlider.value = val;
+      document.getElementById('sens-val').textContent = gameState.sensitivity.toFixed(1);
+      document.getElementById('pause-sens-val').textContent = gameState.sensitivity.toFixed(1);
+    }
+    sensSlider.addEventListener('input', (e) => syncSensitivity(e.target.value));
+    pauseSensSlider.addEventListener('input', (e) => syncSensitivity(e.target.value));
+
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+      const startSt = parseInt(document.getElementById('menu-station-select').value, 10) || 0;
+      startNewGame(startSt);
+    });
+
+    document.getElementById('btn-resume').addEventListener('click', () => resumeGame());
+
+    document.getElementById('btn-restart-station').addEventListener('click', () => {
+      startNewGame(gameState.stationIndex);
+    });
+
+    document.getElementById('btn-quit-menu').addEventListener('click', () => {
+      gameState.mode = 'MENU';
+      document.getElementById('pause-menu').classList.add('hidden');
+      document.getElementById('pause-menu').classList.remove('flex');
+      document.getElementById('hud-layer').classList.add('hidden');
+      document.getElementById('main-menu').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-toggle-audio').addEventListener('click', (e) => {
+      sound.init();
+      sound.setEnabled(!sound.enabled);
+      e.target.textContent = sound.enabled ? 'ENABLED' : 'MUTED';
+      e.target.className = sound.enabled
+        ? 'px-3 py-1 bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-mono-tech font-bold cursor-pointer'
+        : 'px-3 py-1 bg-rose-500/20 border border-rose-400 text-rose-300 text-xs font-mono-tech font-bold cursor-pointer';
+    });
+
+    document.getElementById('btn-skip-transit').addEventListener('click', () => {
+      completeTrainTransit();
+    });
+
+    document.getElementById('btn-end-retry').addEventListener('click', () => {
+      const retryIdx = document.getElementById('end-title').textContent.includes('SURVIVED')
+        ? 0
+        : gameState.stationIndex;
+      startNewGame(retryIdx);
+    });
+
+    document.getElementById('btn-end-menu').addEventListener('click', () => {
+      gameState.mode = 'MENU';
+      document.getElementById('end-screen').classList.add('hidden');
+      document.getElementById('end-screen').classList.remove('flex');
+      document.getElementById('hud-layer').classList.add('hidden');
+      document.getElementById('main-menu').classList.remove('hidden');
+    });
+
+    // =========================================================================
+    // 15. INITIALIZE ENGINE & START RENDER LOOP
+    // =========================================================================
+    buildSubwayEnvironment();
+    buildWeaponViewmodels();
+    initObjectPools();
+    applyGraphicsPreset('LOW'); // Default to LOW graphics preset for 4GB RAM PCs
+    requestAnimationFrame(animate);
+
+  })();
+  </script>
+</body>
+</html>

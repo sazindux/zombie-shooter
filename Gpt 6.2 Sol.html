@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090c0e">
+<title>AFTERLINE — Subway Survival</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+:root{--amber:#ffc14d;--paper:#eeede5;--muted:#a5afaf;--line:#a9b7b32d;--mono:'IBM Plex Mono',monospace;--display:'Barlow Condensed','Arial Narrow',Impact,sans-serif;color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090c0e;color:var(--paper);font-family:Barlow,system-ui,sans-serif}button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:2px solid white;outline-offset:5px}button:disabled{opacity:.5;cursor:wait}[hidden]{display:none!important}#view,#view canvas,.screen,.shade,.grain{position:absolute;inset:0;width:100%;height:100%}#view canvas{display:block}.shade,.grain{pointer-events:none}.shade{background:linear-gradient(90deg,#080b0dfc 0%,#080b0de8 20%,#080b0d9c 42%,transparent 71%),linear-gradient(0deg,#080b0d 0%,transparent 27%,transparent 75%,#080b0dc4 100%)}.grain{opacity:.12;background:repeating-linear-gradient(0deg,transparent 0 3px,#070b0b 4px 5px)}.screen{display:flex;flex-direction:column;padding:28px 4.4% 0}.top,.foot{display:flex;align-items:center;justify-content:space-between;gap:18px}.top{height:51px;border-bottom:1px solid var(--line);padding-bottom:18px}.brand,.top-right,.controls,.foot-control,.row,.panel-head{display:flex;align-items:center;gap:12px}.brand svg{width:31px;height:31px;color:var(--amber)}.brand b{font-family:var(--display);font-size:22px;letter-spacing:.11em;line-height:1}.brand small,.micro,.top-right,.foot,.tag,.station-card,.eyebrow,.subtitle,.modal label,.hud,.transition{font-family:var(--mono)}.brand small{font-size:9px;letter-spacing:.13em;color:var(--muted);border-left:1px solid #89909050;padding-left:13px}.top-right{font-size:10px;letter-spacing:.13em;color:#b5bfbe}.dot{width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--amber);box-shadow:0 0 12px #ffbc4d9a;flex:none}.top-right .dot{background:#83d4b5;box-shadow:0 0 12px #83d4b580}.main{position:relative;flex:1;min-height:0;display:flex;align-items:center}.hero{width:min(580px,100%);padding:15px 0 28px}.eyebrow{width:max-content;max-width:100%;display:flex;align-items:center;gap:10px;color:var(--amber);font-size:10px;font-weight:600;letter-spacing:.19em;border:1px solid #ffc14d48;padding:9px 12px;background:#2b221a77}.hero h1{font-family:var(--display);font-size:clamp(92px,12vw,175px);line-height:.78;letter-spacing:-.018em;margin:19px 0 19px;font-weight:900;text-transform:uppercase}.hero h1 span{display:block;color:var(--amber)}.subtitle{font-size:12px;font-weight:600;letter-spacing:.26em;text-transform:uppercase;display:flex;align-items:center;gap:13px;margin:24px 0 0}.subtitle:before{content:'';width:28px;height:2px;background:var(--amber)}.description{color:#adb6b5;max-width:355px;font-size:16px;line-height:1.55;margin:14px 0 24px}.actions{width:min(327px,100%);display:grid;gap:8px}.action{border:1px solid #a9b7b348;background:#101517c9;height:45px;text-align:left;padding:0 14px;display:flex;align-items:center;gap:12px;text-transform:uppercase;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.12em;transition:background .15s,border-color .15s}.action:hover{background:#283033;border-color:#b9c6c8}.action svg,.foot-control svg{width:17px;height:17px}.action .arrow{margin-left:auto;font-size:16px}.action.primary{background:var(--amber);border-color:var(--amber);color:#16130e;height:51px}.action.primary:hover{background:#ffd487}.corner{position:absolute;right:0;bottom:26px;width:246px}.feed{font:10px var(--mono);letter-spacing:.13em;display:flex;justify-content:space-between;color:#c9d1cb;margin:0 0 8px}.feed span:first-child{color:var(--amber)}.station-card{border:1px solid #a9b7b345;border-left:2px solid var(--amber);padding:13px 14px;background:#0a0e10cf;backdrop-filter:blur(5px)}.station-card small{font-size:9px;letter-spacing:.18em;color:#aeb8b4}.station-card strong{display:block;font:700 28px/.95 var(--display);letter-spacing:.045em;margin:5px 0 10px}.card-bottom{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px;font-size:9px;letter-spacing:.055em;color:#abb5b3}.card-bottom span:last-child{color:var(--amber)}.foot{height:63px;flex:none;border-top:1px solid var(--line);color:#aab6b4;font-size:9px;letter-spacing:.09em}.controls{gap:19px;flex-wrap:wrap}.control{display:flex;align-items:center;gap:6px;white-space:nowrap}kbd{font:600 9px var(--mono);color:#e0e5e0;padding:3px 5px;line-height:1;background:#192022;border:1px solid #a9b7b345;border-radius:2px}.foot-control{border:0;background:transparent;color:#c0c9c8;letter-spacing:.11em;font:10px var(--mono);padding:8px 0;white-space:nowrap}.foot-control:hover{color:var(--amber)}.foot-control svg{color:var(--amber)}.modal,.end,.transition{position:absolute;inset:0;display:grid;place-items:center;background:#070b0ddd;z-index:5;padding:20px}.dialog{width:min(440px,100%);max-height:96vh;overflow:auto;padding:25px;background:#101719;border:1px solid #54615e;border-top:2px solid var(--amber);box-shadow:0 24px 90px #000a}.panel-head{justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:18px}.panel-head h2{font:800 40px/.9 var(--display);margin:0;text-transform:uppercase;letter-spacing:.03em}.close{background:none;border:1px solid var(--line);width:32px;height:32px;font-size:20px}.dialog p,.dialog li{color:#b3bdbb;font-size:15px;line-height:1.55}.dialog .action{width:100%;margin-top:10px}.dialog label,.micro{font-size:11px;color:#aeb9b8;letter-spacing:.15em}.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}.choices button{height:40px;background:#151e20;border:1px solid var(--line);font:600 11px var(--mono)}.choices button[aria-pressed=true]{border-color:var(--amber);color:var(--amber)}#error{color:#ff9a8e;font-size:13px;max-width:330px;margin-bottom:0}.hud{position:absolute;inset:0;pointer-events:none;font-size:11px;text-shadow:0 1px 4px #000}.hud-top,.hud-bottom{position:absolute;left:4%;right:4%;display:flex;justify-content:space-between;gap:15px}.hud-top{top:24px;align-items:start}.hud-bottom{bottom:24px;align-items:end}.hud-card{min-width:135px;border:1px solid #a9b7b35d;background:#0a0e10d9;padding:10px 13px;border-left:2px solid var(--amber)}.hud-card strong{display:block;color:var(--paper);font:800 28px/1 var(--display);margin-top:3px}.hud-card small{color:#c3cdca}.bars{width:min(225px,42vw)}.bar-label{display:flex;justify-content:space-between;margin-bottom:3px}.bar{height:5px;background:#fff2;margin-bottom:7px}.bar:last-child{margin-bottom:0}.bar i{display:block;height:100%;background:#a1d9b5}.bar.stamina i{background:var(--amber)}.ammo{text-align:right}.ammo strong{color:var(--amber)}.crosshair{position:absolute;top:50%;left:50%;width:24px;height:24px;transform:translate(-50%,-50%);background:linear-gradient(#fff,#fff) 50% 0/1px 7px,linear-gradient(#fff,#fff) 50% 100%/1px 7px,linear-gradient(#fff,#fff) 0 50%/7px 1px,linear-gradient(#fff,#fff) 100% 50%/7px 1px;background-repeat:no-repeat;filter:drop-shadow(0 0 2px #000)}.crosshair.hit{transform:translate(-50%,-50%) rotate(45deg);filter:drop-shadow(0 0 3px #ffab37)}#objective,#reloadHUD,#interact{position:absolute;left:50%;transform:translateX(-50%);text-align:center;background:#0a0e10db;border:1px solid var(--line);padding:8px 12px;color:var(--amber);max-width:88%;width:max-content}#objective{top:27px}#reloadHUD{top:calc(50% + 25px)}#interact{bottom:24%}#hurt{position:absolute;inset:0;background:radial-gradient(ellipse,#7f100000 35%,#a51622bf);pointer-events:none;opacity:0}.transition{text-align:center;z-index:4;background:#070b0df2;color:var(--amber);letter-spacing:.2em}.transition strong{display:block;color:var(--paper);font:800 clamp(44px,9vw,100px)/.9 var(--display);letter-spacing:.04em;margin:12px 0}.notice{color:var(--amber)}#settings,#briefing{z-index:7}.transition{background:radial-gradient(ellipse at center,#070b0dc9,#070b0de8 69%,#070b0df9);animation:arrivalFade .6s ease both}@keyframes arrivalFade{from{opacity:0}to{opacity:1}}@media(prefers-reduced-motion:reduce){.transition{animation:none}}
+@media(min-width:950px) and (max-height:740px){.hero h1{font-size:clamp(92px,17.5vh,145px)}.subtitle{margin-top:19px}.hero{padding:12px 0}.description{margin:12px 0 16px}.foot{height:48px}.screen{padding-top:18px}}
+@media(max-width:680px){.screen{padding:17px 20px 0}.brand small{display:none}.hero h1{font-size:clamp(85px,24vw,132px)}.hero{padding:8px 0 18px}.corner{display:none}.top-right{font-size:8px}.subtitle{font-size:10px}.shade{background:linear-gradient(90deg,#080b0df5,#080b0d8e 82%),linear-gradient(0deg,#080b0d,transparent 25%)}.foot{height:62px}.controls{gap:5px 9px}.control:nth-child(n+4){display:none}.foot-control{font-size:8px}.hud-top{top:12px}#objective{top:85px}}
+@media(max-height:610px){.eyebrow{padding:6px 8px}.hero h1{font-size:min(19vh,107px);margin:12px 0}.subtitle{margin-top:15px}.description{margin:8px 0 12px;font-size:13px}.action,.action.primary{height:37px}.foot{height:39px}.top{height:38px;padding-bottom:8px}.screen{padding-top:12px}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="logo" viewBox="0 0 32 32"><path d="M3 25 13 7h6l10 18h-6l-7-13-7 13Zm9 0 4-7 4 7z" fill="currentColor"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="m8 4 13 8-13 8z" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+<symbol id="gear" viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14M9 3v6m6 0v6m-5 0v6" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+<symbol id="book" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5zm3 6h8m-8 4h8" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+<symbol id="sound" viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3zm13-1a6 6 0 0 1 0 8m2-11a10 10 0 0 1 0 14" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+</defs></svg>
+<div id="view" aria-hidden="true"></div><div id="hurt"></div>
+<div class="screen" id="menu">
+<div class="shade"></div><div class="grain"></div>
+<header class="top" style="position:relative"><div class="brand"><svg aria-hidden="true"><use href="#logo"/></svg><b>AFTERLINE</b><small>TRANSIT EMERGENCY SYSTEM</small></div><div class="top-right"><i class="dot"></i> SYSTEM ONLINE <span style="opacity:.45">//</span> V1.0</div></header>
+<main class="main"><section class="hero" aria-labelledby="title"><div class="eyebrow"><i class="dot"></i> EMERGENCY PROTOCOL ACTIVE</div><h1 id="title" aria-label="Afterline">AFTER<span>LINE</span></h1><div class="subtitle">Subway zombie survival</div><p class="description">Five stations. No backup. Survive the infected, hold the platform, and catch the last train out.</p><div class="actions"><button class="action primary" id="start" disabled><svg aria-hidden="true"><use href="#play"/></svg> Start survival <span class="arrow">↗</span></button><button class="action" data-open="settings"><svg aria-hidden="true"><use href="#gear"/></svg> Settings</button><button class="action" data-open="briefing"><svg aria-hidden="true"><use href="#book"/></svg> Field manual</button></div><p id="error" role="alert" hidden></p></section>
+<aside class="corner" aria-label="Surveillance feed"><div class="feed"><span>● LIVE FEED</span><span>CAM / 01</span></div><div class="station-card"><small>INITIAL INSERTION POINT</small><strong>STATION 01</strong><div class="card-bottom"><span>TERMINUS EAST</span><span>THREAT DETECTED</span></div></div></aside></main>
+<footer class="foot" style="position:relative"><div class="controls"><span class="control"><kbd>W A S D</kbd> MOVE</span><span class="control"><kbd>MOUSE</kbd> AIM / FIRE</span><span class="control"><kbd>SHIFT</kbd> SPRINT</span><span class="control"><kbd>R</kbd> RELOAD</span><span class="control"><kbd>1–4</kbd> WEAPONS</span></div><button class="foot-control" id="audio" aria-pressed="true"><svg aria-hidden="true"><use href="#sound"/></svg><span>SOUND ON</span></button></footer>
+</div>
+<div class="hud" id="hud" hidden><div class="hud-top"><div class="hud-card"><small id="stationLabel"></small><strong id="waveLabel"></strong></div><div class="hud-card"><small>INFECTED REMAINING</small><strong id="enemyLabel"></strong></div></div><div id="objective"></div><div class="crosshair" id="crosshair"></div><div id="reloadHUD" hidden></div><div id="interact" hidden></div><div class="hud-bottom"><div class="hud-card bars"><div class="bar-label"><span>HEALTH</span><span id="hpText"></span></div><div class="bar"><i id="hpBar"></i></div><div class="bar-label"><span>STAMINA</span><span id="stText"></span></div><div class="bar stamina"><i id="stBar"></i></div></div><div class="hud-card ammo"><small id="weaponLabel"></small><strong id="ammoLabel"></strong><small>1–4 SWITCH &nbsp;·&nbsp; R RELOAD</small></div></div></div>
+<div class="modal" id="settings" hidden><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="panel-head"><h2 id="settings-title">Settings</h2><button class="close" data-close aria-label="Close settings">×</button></div><label>GRAPHICS QUALITY</label><div class="choices" id="qualities"><button data-quality="low">LOW</button><button data-quality="medium">MEDIUM</button><button data-quality="high">HIGH</button></div><p id="qualityText"></p><button class="action" id="settingsAudio">Toggle sound</button><button class="action primary" data-close>Done <span class="arrow">↗</span></button></section></div>
+<div class="modal" id="briefing" hidden><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="briefing-title"><div class="panel-head"><h2 id="briefing-title">Field manual</h2><button class="close" data-close aria-label="Close field manual">×</button></div><p>Clear two waves at each of five stations. Between waves you’ll receive medical supplies and ammunition. After wave two, board through the lit train doors and follow the prompt to depart.</p><p><kbd>WASD</kbd> Move · <kbd>Mouse</kbd> Aim / fire · <kbd>Shift</kbd> Sprint · <kbd>Space</kbd> Jump · <kbd>R</kbd> Reload · <kbd>E</kbd> Depart · <kbd>Esc</kbd> Pause</p><p><kbd>1</kbd> Tactical SMG · <kbd>2</kbd> Pump shotgun · <kbd>3</kbd> Assault rifle · <kbd>4</kbd> Rocket launcher</p><p class="notice">A keyboard and mouse are required.</p><button class="action primary" data-close>Back to terminal <span class="arrow">↗</span></button></section></div>
+<div class="modal" id="pause" hidden><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="pause-title"><div class="panel-head"><h2 id="pause-title">Paused</h2></div><p id="pauseText">Click Resume to recapture your mouse.</p><button class="action primary" id="resume">Resume <span class="arrow">↗</span></button><button class="action" data-open="settings">Settings</button><button class="action" data-open="briefing">Field manual</button><button class="action" id="quit">Return to terminal</button></section></div>
+<div class="end" id="end" hidden><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="endTitle"><div class="panel-head"><h2 id="endTitle"></h2></div><p id="endStats"></p><button class="action primary" id="retry">Start new run <span class="arrow">↗</span></button><button class="action" id="back">Return to terminal</button></section></div>
+<div class="transition" id="transition" hidden><div><span>AFTERLINE TRANSIT // EN ROUTE</span><strong id="nextTitle"></strong><span>PLEASE STAND CLEAR OF THE DOORS</span></div></div>
+<script type="module">
+const $=id=>document.getElementById(id);
+const hud={}; for(const id of ['stationLabel','waveLabel','enemyLabel','objective','hpText','hpBar','stText','stBar','weaponLabel','ammoLabel','reloadHUD','interact','crosshair','hurt']) hud[id]=$(id);
+let quality='low', sound=true, modal=null, previousFocus=null, onQuality=()=>{}, onAudio=()=>{};
+try{const prefs=JSON.parse(localStorage.getItem('afterline.prefs')||'{}');if(['low','medium','high'].includes(prefs.quality))quality=prefs.quality;sound=prefs.sound!==false}catch{}
+function prefs(){try{localStorage.setItem('afterline.prefs',JSON.stringify({quality,sound}))}catch{}}
+function refreshSettings(){document.querySelectorAll('[data-quality]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.quality===quality)));$('qualityText').textContent={low:'Reduced render resolution and effects. Recommended for integrated graphics.',medium:'Balanced resolution and effects.',high:'Sharper rendering and more particles. Real-time shadows remain off.'}[quality];$('audio').setAttribute('aria-pressed',String(sound));$('audio').querySelector('span').textContent=sound?'SOUND ON':'SOUND OFF';$('settingsAudio').textContent=sound?'Sound: on':'Sound: off'}
+function toggleSound(){sound=!sound;prefs();refreshSettings();onAudio()}
+function closeModal(){if(!modal)return;modal.hidden=true;modal=null;previousFocus?.focus()}
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{previousFocus=b;modal=$(b.dataset.open);modal.hidden=false;modal.querySelector('button').focus()});document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal)closeModal()});document.querySelectorAll('[data-quality]').forEach(b=>b.onclick=()=>{quality=b.dataset.quality;prefs();refreshSettings();onQuality()});$('audio').onclick=$('settingsAudio').onclick=toggleSound;refreshSettings();
+try{
+  const T=await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js');
+  boot(T);
+}catch(err){console.error(err);$('error').hidden=false;$('error').textContent='Unable to start 3D. Check your internet connection and enable WebGL hardware acceleration in Chrome or Edge.'}
+function boot(T){
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v)), rand=(a,b)=>a+Math.random()*(b-a), damp=(v,to,k,dt)=>T.MathUtils.damp(v,to,k,dt);
+  const stations=['Terminus East','Cinder Junction','Hollow Market','Ironworks','Last Light'];
+  const colors=[0x9bcfc4,0xd89a75,0xa5adce,0xb3ba80,0xc5b0d8];
+  const scene=new T.Scene();scene.background=new T.Color(0x090f13);scene.fog=new T.FogExp2(0x152026,.030);
+  const renderer=new T.WebGLRenderer({antialias:false,alpha:false,powerPreference:'low-power'});
+  renderer.outputColorSpace=T.SRGBColorSpace;$('view').append(renderer.domElement);
+  const camera=new T.PerspectiveCamera(69,1,.045,100);camera.rotation.order='YXZ';scene.add(camera);
+  scene.add(new T.HemisphereLight(0xbce5ea,0x514235,1.48));
+  const directional=new T.DirectionalLight(0xb2d7cf,1.85);directional.position.set(1,5,2);scene.add(directional);
+  const fill=new T.DirectionalLight(0xe68b52,.6);fill.position.set(-4,2,-8);scene.add(fill);
+  const box=new T.BoxGeometry(1,1,1), sphere=new T.IcosahedronGeometry(1,0);
+  const basic=c=>new T.MeshBasicMaterial({color:c});
+  const lam=(c,map=null)=>new T.MeshLambertMaterial({color:c,map});
+  function noiseTexture(){const c=document.createElement('canvas');c.width=c.height=128;const cx=c.getContext('2d');const p=cx.createImageData(128,128);let seed=18;const rng=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296};for(let y=0,i=0;y<128;y++)for(let x=0;x<128;x++,i+=4){const v=clamp(211+rng()*42+Math.sin(x*.13+y*.05)*7+Math.cos(y*.19)*9,0,255);p.data.set([v,v,v,255],i)}cx.putImageData(p,0,0);for(let i=0;i<90;i++){cx.fillStyle=`rgba(30,30,30,${rng()*.16})`;cx.fillRect(rng()*128,rng()*128,rng()*3,rng()*28)}const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;return tex}
+  const noise=noiseTexture();
+  const mat={floor:lam(0x454a47,noise),joint:lam(0x232723),concrete:lam(0x575b55,noise),tile:lam(0x53645f,noise),dark:lam(0x20292c,noise),ceiling:lam(0x303738,noise),rim:lam(0xb08a36,noise),metal:lam(0x535c59,noise),rail:lam(0x626b67),wood:lam(0x54433b,noise),glass:lam(0x263c42),stripe:lam(0x803e26),white:basic(0xcaf8ee),amber:basic(0xfab348),red:basic(0xff533d),tunnel:basic(0x081014),debris:lam(0x5b5850,noise)};
+  const stage=new T.Group(), train=new T.Group();scene.add(stage,train);
+  const windowGlass=new T.MeshLambertMaterial({color:0x476268,transparent:true,opacity:.56,depthWrite:false});
+  function mesh(parent,material,x,y,z,w,h,d,geo=box){const m=new T.Mesh(geo,material);m.position.set(x,y,z);m.scale.set(w,h,d);parent.add(m);return m}
+  const dummy=new T.Object3D(), batch=new Map(), solids=[], glows=[], signs=[];let trainDoors=[];
+  function piece(m,x,y,z,w,h,d){if(!batch.has(m))batch.set(m,[]);batch.get(m).push([x,y,z,w,h,d])}
+  function solid(x,z,w,d){solids.push({x,z,w:w/2,d:d/2})}
+  function bake(){for(const [m,items] of batch){const inst=new T.InstancedMesh(box,m,items.length);items.forEach(([x,y,z,w,h,d],i)=>{dummy.position.set(x,y,z);dummy.scale.set(w,h,d);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix)});inst.computeBoundingSphere();stage.add(inst)}batch.clear()}
+  function makeSign(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');draw(ctx);const tx=new T.CanvasTexture(c);tx.colorSpace=T.SRGBColorSpace;tx.anisotropy=2;const m=new T.MeshBasicMaterial({map:tx,side:T.DoubleSide});const g=new T.PlaneGeometry(1,1);const p=new T.Mesh(g,m);p.userData.owned=true;stage.add(p);return p}
+  function stationSign(x,y,z,w,h,facing,tag=false){const p=makeSign(768,192,c=>{c.fillStyle='#101a1c';c.fillRect(0,0,768,192);c.fillStyle='#e6ac50';c.fillRect(0,0,162,192);c.fillStyle='#181711';c.font='bold 109px sans-serif';c.fillText(String(station+1).padStart(2,'0'),19,129);c.fillStyle='#dce5dd';c.font='bold 54px sans-serif';c.fillText(tag?'AFTERLINE TRANSIT':stations[station].toUpperCase(),187,91);c.fillStyle='#a8b9b2';c.font='21px monospace';c.fillText(tag?'EVACUATION ROUTE  /  PLATFORM A':'AFTERLINE  /  EASTBOUND PLATFORM',190,139);c.fillStyle='#e6ac50';c.fillRect(162,185,606,7)});p.position.set(x,y,z);p.scale.set(w,h,1);p.rotation.y=facing;signs.push(p)}
+  function clearStage(){for(const child of stage.children){if(child.userData.owned){child.geometry.dispose();child.material.map.dispose();child.material.dispose()}if(child.isInstancedMesh)child.dispose()} stage.clear();solids.length=glows.length=signs.length=0}
+  function buildStation(){
+    clearStage();directional.color.setHex(colors[station]);
+    piece(mat.floor,-3,-.17,-2,8,.34,60);piece(mat.dark,3,-.78,-2,4,.22,75);piece(mat.floor,6,-.22,-2,2,.4,65);
+    piece(mat.concrete,-7.2,2.1,-2,.42,4.5,67);piece(mat.concrete,7.1,2.1,-2,.42,4.5,67);piece(mat.ceiling,0,4.31,-3,14.5,.36,73);
+    for(let z=-31;z<=28;z+=1.5){piece(mat.joint,-3,.005,z,7.96,.012,.019);piece(mat.rim,.77,.013,z, .4,.024,1.43);for(let i=0;i<7;i++)piece(mat.rim,.69+(i%2)*.15,.03,z-.58+i*.18,.06,.026,.055);piece(mat.wood,3,-.54,z,2.6,.18,.24);for(let y=.55;y<3.1;y+=.52){piece(mat.tile,6.86,y,z,.08,.47,1.45);piece(mat.tile,-6.95,y,z,.08,.47,1.45)}}
+    for(let x=-6;x<.6;x+=1){piece(mat.joint,x,.006,-2,.02,.011,59.8)}
+    for(const x of [2.13,3.89]){piece(mat.rail,x,-.37,-3,.11,.10,74);piece(mat.metal,x,-.46,-3,.045,.14,74)}
+    for(const x of [-6.88,6.85]){piece(mat.stripe,x,2.84,-2,.06,.22,62);piece(mat.metal,x,3.3,-2,.13,.09,62);piece(mat.dark,x,3.46,-2,.14,.10,62);piece(mat.dark,x,.24,-2,.12,.28,62)}
+    for(let z=-27;z<=24;z+=7.5){
+      for(const x of [-5.92,-1.38,6.15]){piece(mat.concrete,x,2.04,z,.49,4.13,.55);piece(mat.dark,x,.24,z,.63,.45,.65);piece(mat.dark,x,3.9,z,.68,.30,.72);piece(mat.stripe,x,2.42,z,.505,.19,.57);if(x<1)solid(x,z,.62,.64)}
+      piece(mat.concrete,0,3.99,z,13.95,.24,.41);piece(mat.dark,-2.8,4.04,z+1.05,3.3,.23,.4);glows.push(mesh(stage,mat.white,-2.8,3.90,z+1.05,3.05,.049,.21));
+      piece(mat.dark,5.45,4.04,z+.9,1.8,.19,.35);glows.push(mesh(stage,mat.white,5.45,3.92,z+.9,1.65,.043,.16));
+      piece(mat.dark,6.77,2.2,z+.4,.19,.38,.27);piece(mat.red,6.65,2.23,z+.4,.054,.14,.17);
+    }
+    for(const z of [-22,-7,8,21]){const x=-6.35;piece(mat.wood,x,.49,z,.67,.12,2.45);piece(mat.wood,x-.32,.82,z,.10,.41,2.45);for(const dz of [-.91,.91])piece(mat.metal,x,.24,z+dz,.51,.48,.15);solid(x,z,.8,2.5)}
+    for(const [x,z] of [[-4.8,-11],[-6.1,3],[-5.5,16]]){piece(mat.dark,x,.43,z,.57,.86,.61);piece(mat.metal,x,.85,z,.64,.14,.68);solid(x,z,.67,.73)}
+    const luggage=[[],[[-5.24,-17],[-4.9,18]],[[-1.25,-15],[-5.2,0],[-4.8,20]],[[-5.1,-20],[-5.4,11],[-.85,-9]],[[-5.1,-16],[-.87,4.2],[-5.3,20],[-1.12,-12]]][station];
+    for(const [x,z] of luggage){piece(mat.dark,x,.29,z,.69,.58,.98);piece(mat.stripe,x,.35,z+.496,.64,.10,.03);piece(mat.metal,x,.57,z,.74,.075,1.03);solid(x,z,.74,1.03)}
+    for(let i=0;i<65;i++){const x=rand(-6.7,.45),z=rand(-29,27);piece(mat.debris,x,.018,z,rand(.03,.18),rand(.015,.042),rand(.04,.17))}
+    for(const z of [-34,32]){piece(mat.dark,-3,2.1,z,8,4.2,.75);piece(mat.dark,6,2.1,z,2,4.2,.75);piece(mat.dark,3,3.84,z,4,.78,1.25);piece(mat.tunnel,3,1.6,z+(z<0?-3:3),4,3.15,.3);piece(mat.red,3.95,2.5,z+(z<0?.58:-.58),.1,.08,.11)}
+    stationSign(-2.1,3.34,-5.2,4.65,.91,0);stationSign(-6.86,2.3,-14,3.55,.88,Math.PI/2);stationSign(6.79,2.35,-12,4.7,1.04,-Math.PI/2,true);stationSign(-2.2,3.30,-19,3.9,.77,0);stationSign(-2.2,3.30,15,4.2,.87,Math.PI);
+    bake();
+    if(nav)rebuildNav();
+  }
+  function buildTrain(){
+    mesh(train,mat.metal,2.93,-.19,0,2.93,.38,16);mesh(train,mat.dark,2.93,2.72,0,2.99,.19,16);mesh(train,mat.white,2.92,2.61,0,.21,.04,11.7);mesh(train,mat.metal,4.36,1.2,0,.18,2.68,16);
+    for(const z of [-7.96,7.96]){mesh(train,mat.dark,2.93,1.2,z,2.96,2.68,.16);mesh(train,mat.glass,2.93,1.91,z+(z<0?-.09:.09),1.7,.68,.04);for(const x of [2.01,3.85])mesh(train,mat.amber,x,.78,z+(z<0?-.1:.1),.23,.17,.04)}
+    for(const [z,w] of [[-6.08,3.84],[-1.815,2.57],[1.815,2.57],[6.08,3.84]]){mesh(train,mat.metal,1.48,.54,z,.18,1.47,w);mesh(train,mat.metal,1.48,2.41,z,.18,.73,w);mesh(train,windowGlass,1.49,1.66,z,.045,.73,w);mesh(train,mat.stripe,1.37,.81,z,.07,.22,w)}
+    for(const z of [-3.63,0,3.63]){mesh(train,mat.amber,1.48,2.35,z,.19,.12,1.15);mesh(train,mat.rim,1.26,-.055,z,.46,.12,1.18);for(const side of [-1,1]){const d=new T.Group();d.position.z=z+side*.27;train.add(d);mesh(d,mat.metal,1.48,.98,0,.16,1.96,.53);mesh(d,mat.glass,1.385,1.45,0,.035,.53,.32);mesh(d,mat.stripe,1.38,.82,0,.04,.19,.53);trainDoors.push({d,z,side})}}
+    for(const z of [-5.8,-2.15,2.15,5.8]){mesh(train,mat.wood,4.02,.49,z,.64,.15,1.68);mesh(train,mat.wood,4.26,.78,z,.16,.47,1.68);mesh(train,mat.rail,3.7,1.4,z+.91,.055,2.38,.055)}
+    train.visible=false;
+  }
+  let station=0;
+  // Build the navigable grid separately after collision helpers are initialized.
+  let nav=null;
+  buildStation();buildTrain();
+  function resize(){const limit={low:.78,medium:1,high:1.35}[quality];renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,limit));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/Math.max(1,innerHeight);camera.updateProjectionMatrix()}
+  onQuality=resize;window.addEventListener('resize',resize);resize();
+  camera.position.set(-3.8,1.83,15.3);camera.rotation.set(-.028,-.38,0);
+  renderer.render(scene,camera);
+  // Web Audio voices are generated locally and disconnected after playback.
+  let audioCtx,master,noiseBuffer,room;
+  function audioReady(){
+    if(!sound)return;
+    try{
+      if(!audioCtx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;audioCtx=new AC();master=audioCtx.createGain();master.gain.value=.43;master.connect(audioCtx.destination);noiseBuffer=audioCtx.createBuffer(1,audioCtx.sampleRate,audioCtx.sampleRate);const data=noiseBuffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=rand(-1,1);const hum=audioCtx.createOscillator();room=audioCtx.createGain();hum.type='triangle';hum.frequency.value=49;room.gain.value=0;hum.connect(room).connect(master);hum.start()}
+      if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});
+    }catch{}
+  }
+  onAudio=()=>{audioReady();if(master)master.gain.setTargetAtTime(sound ? .43 : 0,audioCtx.currentTime,.025)};
+  function fx(type,level=1){
+    if(!sound||!master||audioCtx.state!=='running')return;
+    const [a,b,len,vol,band]=({smg:[145,51,.105,.49,1500],shot:[120,37,.24,.77,1150],rifle:[195,46,.15,.61,2050],rocket:[105,49,.45,.6,620],boom:[79,22,.65,.82,510],reload:[850,285,.075,.2,3500],hit:[205,70,.12,.40,560],infected:[86,45,.43,.16,330],train:[98,42,1.65,.28,540],reward:[396,672,.43,.26,0],empty:[510,223,.052,.16,2200]})[type];
+    const now=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type==='reward'?'sine':'triangle';o.frequency.setValueAtTime(a,now);o.frequency.exponentialRampToValueAtTime(b,now+len);g.gain.setValueAtTime(vol*level*.44,now);g.gain.exponentialRampToValueAtTime(.0001,now+len);o.connect(g).connect(master);o.start(now);o.stop(now+len);o.onended=()=>{o.disconnect();g.disconnect()};
+    if(band){const n=audioCtx.createBufferSource(),ng=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();n.buffer=noiseBuffer;filter.type='lowpass';filter.frequency.value=band;ng.gain.setValueAtTime(vol*level,now);ng.gain.exponentialRampToValueAtTime(.0001,now+len);n.connect(filter).connect(ng).connect(master);n.start(now,rand(0,.22));n.stop(now+len);n.onended=()=>{n.disconnect();filter.disconnect();ng.disconnect()}}
+  }
+  const weapons=[
+    {name:'TACTICAL SMG',fire:'smg',mag:30,stock:180,damage:25,interval:.10,reload:1.28,spread:.017,recoil:.029,range:49,color:0x435157,length:.40},
+    {name:'PUMP SHOTGUN',fire:'shot',mag:7,stock:49,damage:23,pellets:8,interval:.67,reload:1.69,spread:.105,recoil:.105,range:23,color:0x746152,length:.62,semi:true},
+    {name:'ASSAULT RIFLE',fire:'rifle',mag:24,stock:144,damage:42,interval:.18,reload:1.52,spread:.012,recoil:.046,range:57,color:0x566054,length:.58},
+    {name:'ROCKET LAUNCHER',fire:'rocket',mag:1,stock:5,damage:285,interval:.96,reload:1.95,spread:0,recoil:.138,range:65,color:0x5b6748,length:.65,semi:true}
+  ];
+  const gun=new T.Group();camera.add(gun);
+  const darkGun=lam(0x20262a),grip=lam(0x394046),glove=lam(0x55533d),sight=basic(0xffb946);
+  const gunModels=weapons.map((w,i)=>{
+    const g=new T.Group();gun.add(g);const main=lam(w.color), thick=i===3?.17:.105;
+    mesh(g,main,0,0,-.14,thick,.108,w.length);mesh(g,darkGun,0,-.071,-.07,.069,.15,.084).rotation.x=-.25;
+    mesh(g,glove,0,-.10,-.02,.102,.126,.099);mesh(g,grip,.13,-.134,.047,.225,.123,.091).rotation.z=-.36;
+    mesh(g,glove,-.018,-.049,-w.length*.57,.112,.1,.12);mesh(g,darkGun,0,.013,-w.length*.70,thick*.64,.069,.22);
+    mesh(g,main,0,0,-w.length*.83,thick*.9,.077,.088);mesh(g,grip,0,.059,-.123,.056,.038,.11);mesh(g,sight,0,.084,-.13,.013,.011,.018);
+    if(i===1)mesh(g,glove,0,-.04,-.36,.12,.082,.163);else if(i!==3)mesh(g,grip,0,-.075,-.23,.066,.13,.092).rotation.x=.17;
+    g.visible=false;return g;
+  });
+  const flash=mesh(gun,mat.amber,0,0,0,.13,.13,.20,sphere);flash.visible=false;
+  const particleMat=[basic(0xffb34a),basic(0xdb5940),basic(0xa5af99)];
+  const particlePool=Array.from({length:80},(_,i)=>{const m=mesh(scene,particleMat[0],0,0,0,1,1,1,i%3?box:sphere);m.visible=false;return {m,life:0,v:new T.Vector3()}});
+  const tracerPool=Array.from({length:24},()=>{const m=mesh(scene,mat.amber,0,0,0,.015,.015,1);m.visible=false;return {m,life:0}});
+  const rocketPool=Array.from({length:4},()=>{const m=mesh(scene,mat.amber,0,0,0,.065,.065,.28);m.visible=false;return {m,life:0,v:new T.Vector3(),trail:0}});
+  const glow=mesh(scene,basic(0xff9647),0,0,0,1,1,1,sphere);glow.visible=false;let boomTimer=0;
+  const UP=new T.Vector3(0,0,1), origin=new T.Vector3(), aim=new T.Vector3(), right=new T.Vector3(), stepRay=new T.Vector3(), targetPos=new T.Vector3(), muzzle=new T.Vector3(), point=new T.Vector3();
+  function freeSlot(list){return list.find(p=>p.life<=0)||list[0]}
+  function particles(x,y,z,n,color,force){n=Math.ceil(n*({low:.46,medium:.72,high:1}[quality]));for(let i=0;i<n;i++){const p=freeSlot(particlePool);p.life=rand(.21,.66);p.v.set(rand(-force,force),rand(.4,force+1),rand(-force,force));p.m.position.set(x,y,z);p.m.material=particleMat[color];p.m.scale.setScalar(rand(.024,.095)*(force>4?1.65:1));p.m.rotation.set(rand(0,3),rand(0,3),0);p.m.visible=true}}
+  function tracer(from,to){const p=freeSlot(tracerPool);p.life=.067;p.m.visible=true;stepRay.subVectors(to,from);p.m.position.copy(from).addScaledVector(stepRay,.5);p.m.scale.set(.013,.013,Math.max(.025,stepRay.length()));p.m.quaternion.setFromUnitVectors(UP,stepRay.normalize())}
+  function updateEffects(dt){for(const p of particlePool){if(p.life<=0)continue;p.life-=dt;p.v.y-=8*dt;p.m.position.addScaledVector(p.v,dt);p.m.rotation.x+=dt*8;if(p.life<=0||p.m.position.y<-.02){p.life=0;p.m.visible=false}}for(const p of tracerPool){if(p.life<=0)continue;p.life-=dt;if(p.life<=0)p.m.visible=false}if(boomTimer>0){boomTimer-=dt;glow.visible=boomTimer>0;glow.scale.setScalar(.45+(1-boomTimer/.15)*.9)}}
+  const zombieTypes=[
+    {hp:86,speed:1.63,damage:12,scale:1,tint:0x535d52,skin:0x8a9580,radius:.38},
+    {hp:59,speed:2.76,damage:9,scale:.93,tint:0x806047,skin:0x97a983,radius:.34},
+    {hp:193,speed:1.19,damage:20,scale:1.17,tint:0x414950,skin:0x8c917b,radius:.43},
+    {hp:570,speed:1.36,damage:34,scale:1.58,tint:0x5e3b36,skin:0xaa7a63,radius:.54}
+  ];
+  const eye=basic(0xff8c4b),bruteEye=basic(0xff5744),wound=lam(0x663e36),armor=lam(0x343c3d),pants=lam(0x343d37);
+  zombieTypes.forEach(k=>{k.body=lam(k.tint);k.face=lam(k.skin)});
+  const zombies=Array.from({length:10},(_,index)=>{
+    const g=new T.Group();scene.add(g);const core=new T.Group();g.add(core);
+    const torso=mesh(core,zombieTypes[0].body,0,1.11,0,.53,.58,.30);
+    const head=mesh(core,zombieTypes[0].face,0,1.57,.03,.29,.33,.28);
+    const jaw=mesh(core,wound,0,1.46,.151,.205,.07,.043);
+    const eyes=[-.07,.07].map(x=>mesh(core,eye,x,1.61,.174,.041,.025,.015));
+    const plates=[mesh(core,armor,0,1.15,.168,.43,.32,.065),mesh(core,armor,0,1.72,.02,.34,.12,.31),mesh(core,armor,-.31,1.29,0,.17,.17,.35),mesh(core,armor,.31,1.29,0,.17,.17,.35)];
+    const arms=[],legs=[],flesh=[];
+    for(const sign of [-1,1]){const arm=new T.Group();arm.position.set(sign*.33,1.34,0);core.add(arm);arms.push(arm);flesh.push(mesh(arm,zombieTypes[0].face,0,-.25,0,.145,.46,.15));flesh.push(mesh(arm,zombieTypes[0].face,0,-.47,.009,.14,.12,.16));const leg=new T.Group();leg.position.set(sign*.135,.79,0);core.add(leg);legs.push(leg);mesh(leg,pants,0,-.34,0,.205,.68,.21);mesh(leg,armor,0,-.69,.064,.215,.19,.30)}
+    g.visible=false;return {index,g,core,torso,head,jaw,eyes,plates,arms,legs,flesh,active:false,corpse:0,k:null,hp:0,phase:rand(0,6.28),attack:0,flinch:0,voice:0,side:index%2?1:-1};
+  });
+  const player={x:-3.4,z:9,y:0,vx:0,vz:0,vy:0,yaw:0,pitch:0,hp:100,st:100,rest:0};
+  const keys=new Set();let trigger=false,press=false,locked=false,wantLock=false,mode='menu',phase='idle',weapon=0,loadout=[],wave=1,kills=0,queue=[],left=0,spawnDelay=0,timer=0,doorOpen=0,trainZ=0,clock=0,kick=0,shotWait=0,reload=0,reloadTotal=0,reloadTick=false,flashTime=0,hitTime=0,hurtTime=0,walk=0,hudTime=0,frameId;
+  const active=()=>zombies.some(z=>z.active), pads=[-3.63,0,3.63];
+  const grid={x:-6.45,z:-31.5,step:.45,w:16,h:132};
+  nav={walkable:new Uint8Array(grid.w*grid.h),distance:new Int16Array(grid.w*grid.h),fifo:new Int16Array(grid.w*grid.h),goal:-1,wait:0};
+  rebuildNav();
+  function gridId(x,z){return clamp(Math.round((z-grid.z)/grid.step),0,grid.h-1)*grid.w+clamp(Math.round((x-grid.x)/grid.step),0,grid.w-1)}
+  function rebuildNav(){const {x,z,step,w,h}=grid;for(let j=0;j<h;j++)for(let i=0;i<w;i++)nav.walkable[j*w+i]=Number(platformClear(x+i*step,z+j*step,.37));nav.distance.fill(-1);nav.goal=-1;nav.wait=0}
+  function pathField(dt){
+    nav.wait-=dt;if(nav.wait>0)return;nav.wait=.23;
+    let goal=gridId(player.x,player.z);
+    if(!nav.walkable[goal]){let best=Infinity,chosen=-1;for(let i=0;i<nav.walkable.length;i++){if(!nav.walkable[i])continue;const x=grid.x+i%grid.w*grid.step,z=grid.z+Math.floor(i/grid.w)*grid.step,d=(x-player.x)**2+(z-player.z)**2;if(d<best){best=d;chosen=i}}goal=chosen}
+    if(goal===nav.goal||goal<0)return;nav.goal=goal;nav.distance.fill(-1);nav.distance[goal]=0;nav.fifo[0]=goal;
+    for(let read=0,write=1;read<write;read++){const id=nav.fifo[read],c=id%grid.w,d=nav.distance[id]+1;for(const n of [c>0?id-1:-1,c<grid.w-1?id+1:-1,id-grid.w,id+grid.w]){if(n>=0&&n<nav.walkable.length&&nav.walkable[n]&&nav.distance[n]<0){nav.distance[n]=d;nav.fifo[write++]=n}}}
+  }
+  function pathDirection(x,z,dx,dz,dist,r){
+    const heading=Math.atan2(dx,dz),probe=Math.min(1.22,dist);if(platformClear(x+dx/dist*probe,z+dz/dist*probe,r))return heading;
+    const id=gridId(x,z),ix=id%grid.w,iz=Math.floor(id/grid.w);let best=Infinity,angle=heading;
+    for(let j=-2;j<=2;j++)for(let i=-2;i<=2;i++){const xx=ix+i,zz=iz+j;if(xx<0||xx>=grid.w||zz<0||zz>=grid.h)continue;const d=nav.distance[zz*grid.w+xx];if(d<0)continue;const vx=grid.x+xx*grid.step-x,vz=grid.z+zz*grid.step-z,len=Math.hypot(vx,vz);const score=d+len*.46;if(len<.12||score>=best||!platformClear(x+vx*.45,z+vz*.45,r)||!platformClear(x+vx,z+vz,r))continue;angle=Math.atan2(vx,vz);best=score}
+    return angle;
+  }
+  function resetEffects(){for(const p of [...particlePool,...tracerPool,...rocketPool]){p.life=0;p.m.visible=false}boomTimer=0;glow.visible=flash.visible=false;flashTime=hitTime=hurtTime=0;hud.hurt.style.opacity='0'}
+  function resetCombat(){for(const z of zombies){z.active=false;z.corpse=0;z.g.visible=false}queue=[];resetEffects();shotWait=reload=kick=0;doorOpen=0;train.visible=false;setDoors(0)}
+  function resetPlayer(){Object.assign(player,{x:-3.55,z:9,y:0,vx:0,vz:0,vy:0,yaw:0,pitch:0,st:100,rest:0});walk=0}
+  function equip(i){weapon=i;gunModels.forEach((g,n)=>g.visible=n===i);reload=0;kick=0;flashTime=0;flash.visible=false;shotWait=Math.max(shotWait,.12);drawHUD()}
+  function startRun(){
+    audioReady();station=0;wave=1;kills=0;buildStation();resetCombat();resetPlayer();player.hp=100;loadout=weapons.map(w=>({ammo:w.mag,reserve:w.stock}));equip(0);mode='paused';$('menu').hidden=$('end').hidden=true;$('hud').hidden=false;$('pause').hidden=false;beginWave();viewPlayer();requestLock();
+  }
+  function beginWave(){
+    const n=6+station*3+wave*2;queue=[];
+    for(let i=0;i<n;i++){let kind=0;if((station>0||wave===2)&&i%4===1)kind=1;if(station>0&&i%5===3)kind=2;if(station>2&&i%7===4)kind=1;queue.push(kind)}
+    if((station===2&&wave===2)||(station===4)){queue.push(3)}
+    left=queue.length;phase='wave';spawnDelay=1.7;timer=0;drawHUD();
+  }
+  function reward(){player.hp=Math.min(100,player.hp+32);player.st=100;for(let i=0;i<4;i++)loadout[i].reserve=Math.min(weapons[i].stock,loadout[i].reserve+[80,21,60,2][i]);fx('reward')}
+  function setDoors(v){for(const {d,z,side} of trainDoors)d.position.z=z+side*(.27+.57*v)}
+  function movingTrain(){phase='arrival';timer=4.4;train.visible=true;trainZ=-42;train.position.z=trainZ;doorOpen=0;fx('train')}
+  function insideCar(){return player.x>1.62&&player.x<4.2&&Math.abs(player.z-trainZ)<7.65}
+  function stepProgress(dt){
+    if(phase==='wave'){
+      spawnDelay-=dt;
+      const cap=quality==='low'?8:10;
+      if(queue.length&&spawnDelay<=0&&zombies.filter(z=>z.active).length<cap){spawn(queue.shift());spawnDelay=Math.max(.38,.88-station*.075)}
+      if(queue.length===0&&!active()){reward();phase='reward';timer=wave===1?4.7:2.8;left=0}
+    }else if(phase==='reward'){
+      timer-=dt;if(timer<=0){if(wave===1){wave=2;beginWave()}else movingTrain()}
+    }else if(phase==='arrival'){
+      timer-=dt;const t=clamp(1-timer/4.4,0,1);trainZ=-42*Math.pow(1-t,2.4);train.position.z=trainZ;if(timer<=0){trainZ=0;train.position.z=0;phase='doors';timer=.88;fx('reload')}
+    }else if(phase==='doors'){
+      timer-=dt;doorOpen=clamp(1-timer/.88,0,1);setDoors(doorOpen);if(timer<=0)phase='board';
+    }
+  }
+  function depart(){if(mode!=='playing'||phase!=='board'||!insideCar())return;mode='travel';trigger=press=false;keys.clear();timer=3.25;$('hud').hidden=true;$('transition').hidden=false;gun.visible=false;$('nextTitle').textContent=station===4?'Surface extraction':`Station 0${station+2} · ${stations[station+1]}`;fx('train')}
+  function travel(dt){timer-=dt;doorOpen=Math.max(0,doorOpen-dt*1.75);setDoors(doorOpen);if(timer<2.75){trainZ+=(2.75-timer)*dt*8;train.position.z=trainZ;camera.position.z=player.z+trainZ}if(timer>0)return;$('transition').hidden=true;if(station===4){endRun(true);return}station++;wave=1;buildStation();resetCombat();resetPlayer();player.hp=Math.min(100,player.hp+23);$('hud').hidden=false;beginWave();mode=locked?'playing':'paused';gun.visible=true;if(!locked)$('pause').hidden=false}
+  function endRun(won){mode='end';clearInput();if(document.pointerLockElement)document.exitPointerLock?.();$('hud').hidden=$('pause').hidden=$('transition').hidden=true;$('end').hidden=false;$('endTitle').textContent=won?'Extraction complete':'Signal lost';$('endStats').textContent=won?`You cleared all five stations and made it to the surface. Infected eliminated: ${kills}.`:`Your run ended at Station 0${station+1}, Wave ${wave}. Infected eliminated: ${kills}.`;$('retry').focus()}
+  function menu(){mode='menu';clearInput();document.exitPointerLock?.();closeModal();$('pause').hidden=$('end').hidden=$('hud').hidden=$('transition').hidden=true;$('menu').hidden=false;resetCombat();station=0;buildStation();gun.visible=false;$('start').focus()}
+  function platformClear(x,z,r){if(x < -6.85+r||x>.82-r||z< -32+r||z>28-r)return false;return !solids.some(o=>Math.abs(o.x-x)<o.w+r&&Math.abs(o.z-z)<o.d+r)}
+  function doorLane(z){return pads.some(p=>Math.abs(z-trainZ-p)<.43)}
+  function playerClear(x,z){
+    if(x<=.58)return platformClear(x,z,.23);
+    if(phase!=='board')return false;
+    if(x<1.73)return doorLane(z);
+    return x<=4.11&&Math.abs(z-trainZ)<7.69&&!(x>3.66&&[-5.8,-2.15,2.15,5.8].some(k=>Math.abs(z-trainZ-k)<1.02));
+  }
+  function nextPosition(dt){
+    const d=Number(keys.has('KeyD'))-Number(keys.has('KeyA')),f=Number(keys.has('KeyW'))-Number(keys.has('KeyS')),moving=d!==0||f!==0;
+    const running=moving&&f>=0&&(keys.has('ShiftLeft')||keys.has('ShiftRight'))&&player.st>0&&player.rest<=0;
+    if(running){player.st=Math.max(0,player.st-dt*29);if(!player.st)player.rest=1.15}else if(player.rest>0)player.rest-=dt;else player.st=Math.min(100,player.st+dt*21);
+    const a=player.yaw,c=Math.cos(a),s=Math.sin(a),speed=(running?7.15:4.28)/(moving?Math.hypot(d,f):1);
+    player.vx=damp(player.vx,(c*d-s*f)*speed,moving?13:18,dt);player.vz=damp(player.vz,(-s*d-c*f)*speed,moving?13:18,dt);
+    const nx=player.x+player.vx*dt,nz=player.z+player.vz*dt;if(playerClear(nx,player.z))player.x=nx;else player.vx=0;if(playerClear(player.x,nz))player.z=nz;else player.vz=0;
+    if(player.y>0||player.vy>0){player.y+=player.vy*dt;player.vy-=17*dt;if(player.y<0)player.y=player.vy=0}
+    walk+=Math.hypot(player.vx,player.vz)*dt*2.45;
+  }
+  function spawn(kind){
+    const z=zombies.find(z=>!z.active&&z.corpse<=0)||zombies.find(z=>!z.active);if(!z)return;
+    const k=zombieTypes[kind];let x=-3.6,pz=player.z>0?-27:25;
+    for(let tries=0;tries<21;tries++){const ax=rand(-5.4,-.65),az=(Math.random()<.58?(player.z>0?-1:1):(player.z>0?1:-1))*rand(21,27.5);if(Math.hypot(ax-player.x,az-player.z)>10&&platformClear(ax,az,.4)&&zombies.every(o=>!o.active||Math.hypot(o.g.position.x-ax,o.g.position.z-az)>.8)){x=ax;pz=az;break}}
+    Object.assign(z,{k,kind,active:true,corpse:0,hp:k.hp*(1+station*.053),attack:rand(.24,.54),flinch:0,voice:rand(.3,2.6)});z.g.position.set(x,0,pz);z.g.scale.setScalar(k.scale);z.g.visible=true;z.core.rotation.set(0,0,0);z.core.position.set(0,0,0);z.torso.material=k.body;z.head.material=k.face;z.flesh.forEach(m=>m.material=k.face);z.plates.forEach(m=>m.visible=kind>=2);z.eyes.forEach(m=>m.material=kind>=2?bruteEye:eye);
+  }
+  function hitZombie(z,amount,nx,ny,nz){if(!z.active)return;z.hp-=amount;z.flinch=.115;hitTime=.12;particles(nx,ny,nz,z.hp<=0?12:3,1,z.hp<=0?2.4:1.2);if(z.hp<=0){z.active=false;z.corpse=.71;kills++;left--;if(z.kind===3)fx('hit',.8)}}
+  function damagePlayer(n){player.hp=Math.max(0,player.hp-n);hurtTime=.42;fx('hit');if(!player.hp)endRun(false)}
+  function zombieTick(dt){
+    if(active())pathField(dt);
+    for(const z of zombies){
+      if(!z.active){if(z.corpse>0){z.corpse-=dt;z.core.rotation.x=-Math.min(1.48,(.71-z.corpse)*7);z.core.position.y=-Math.max(0,.34-z.corpse)*1.9;if(z.corpse<=0)z.g.visible=false}continue}
+      const pos=z.g.position,k=z.k,dx=player.x-pos.x,dz=player.z-pos.z,dist=Math.hypot(dx,dz),r=k.radius*.76,reach=1.02*k.scale,direct=Math.atan2(dx,dz);
+      z.flinch=Math.max(0,z.flinch-dt);z.attack-=dt;z.voice-=dt;z.phase+=dt*(5+3*k.speed);
+      if(z.voice<=0){z.voice=rand(3,7);if(dist<16)fx('infected',Math.max(.12,1-dist/17))}
+      if(dist>reach*.87){
+        const route=pathDirection(pos.x,pos.z,dx,dz,dist,r);
+        let ax=Math.sin(route),az=Math.cos(route);
+        for(const o of zombies){if(o===z||!o.active)continue;const ox=pos.x-o.g.position.x,oz=pos.z-o.g.position.z,sep=ox*ox+oz*oz;if(sep>.001&&sep<.82){ax+=ox*(.82-sep)*1.35;az+=oz*(.82-sep)*1.35}}
+        const heading=Math.atan2(ax,az),spd=k.speed*(1+station*.052)*(z.flinch>0?.48:1),move=spd*dt;
+        let chosen=heading;
+        for(const off of [0,.64*z.side,-.64*z.side,1.37*z.side,-1.37*z.side,2.12*z.side,-2.12*z.side,Math.PI]){
+          const angle=heading+off,ux=Math.sin(angle),uz=Math.cos(angle);if(!platformClear(pos.x+ux*.24,pos.z+uz*.24,r))continue;
+          const nx=pos.x+ux*move,nz=pos.z+uz*move;
+          if(platformClear(nx,nz,r)){pos.x=nx;pos.z=nz;chosen=angle;break}
+        }
+        z.g.rotation.y=dist<2.2?direct:chosen;
+      }else z.g.rotation.y=direct;
+      if(dist<reach&&z.attack<=0&&player.y<.72&&platformClear((player.x+pos.x)/2,(player.z+pos.z)/2,.01)){z.attack=z.kind===1?.68:1.03;damagePlayer(k.damage);if(mode!=='playing')return}
+      const gait=Math.sin(z.phase)*(dist>reach*.87?.53:.10),lunging=z.attack>.53&&dist<reach*1.2;
+      z.core.position.y=Math.abs(gait)*.068;z.core.rotation.x=z.flinch>0?-.24:z.kind===1?.19:.065;
+      z.legs[0].rotation.x=gait;z.legs[1].rotation.x=-gait;z.arms[0].rotation.x=-1.08-gait*.45-(lunging?.61:0);z.arms[1].rotation.x=-.98+gait*.45-(lunging?.61:0);
+    }
+  }
+  function rayBox(x,y,z,dx,dy,dz,l,b,n,r,t,f){
+    let lo=0,hi=Infinity;const vals=[[x,dx,l,r],[y,dy,b,t],[z,dz,n,f]];
+    for(const [p,d,min,max] of vals){if(Math.abs(d)<.00001){if(p<min||p>max)return Infinity;continue}let a=(min-p)/d,c=(max-p)/d;if(a>c)[a,c]=[c,a];lo=Math.max(lo,a);hi=Math.min(hi,c);if(hi<lo)return Infinity}return lo;
+  }
+  function traceWall(o,d,max){
+    const endAxis=(p,v,a,b)=>v>.00001?(b-p)/v:v<-.00001?(a-p)/v:Infinity;
+    let nearest=Math.min(max,endAxis(o.x,d.x,-6.95,6.9),endAxis(o.z,d.z,-33.6,31.6),endAxis(o.y,d.y,0,4.1));
+    for(const s of solids){const h=s.w<.33?4.1:1.04;const t=rayBox(o.x,o.y,o.z,d.x,d.y,d.z,s.x-s.w,0,s.z-s.d,s.x+s.w,h,s.z+s.d);if(t<nearest)nearest=t}return Math.max(0,nearest);
+  }
+  function sphereHit(o,d,x,y,z,r){const dx=x-o.x,dy=y-o.y,dz=z-o.z,proj=dx*d.x+dy*d.y+dz*d.z,disc=r*r-(dx*dx+dy*dy+dz*dz-proj*proj);if(disc<0||proj<0)return Infinity;return Math.max(0,proj-Math.sqrt(disc))}
+  function target(o,d,dist){let found=null,mult=1;for(const z of zombies){if(!z.active)continue;const x=z.g.position.x,y=z.core.position.y,zz=z.g.position.z,s=z.k.scale;const h=sphereHit(o,d,x,1.57*s+y,zz,.195*s),body=Math.min(sphereHit(o,d,x,1.08*s+y,zz,.36*s),sphereHit(o,d,x,.58*s+y,zz,.26*s));const t=Math.min(h,body);if(t<dist){dist=t;found=z;mult=h<body?(z.kind>=2?1.48:1.82):(z.kind>=2?.86:1)}}return {found,dist,mult}}
+  function explode(x,y,z){
+    glow.position.set(x,Math.max(y,.12),z);glow.visible=true;boomTimer=.15;particles(x,Math.max(y,.06),z,34,0,6.3);particles(x,Math.max(y,.06),z,19,2,4.5);fx('boom');kick=Math.max(kick,.08);
+    for(const e of zombies){if(!e.active)continue;const pos=e.g.position;targetPos.set(pos.x-x,1.05*e.k.scale-y,pos.z-z);const d=targetPos.length();if(d<4.35){targetPos.normalize();point.set(x+targetPos.x*.06,Math.max(.04,y+targetPos.y*.06),z+targetPos.z*.06);if(traceWall(point,targetPos,d)>=d-.18)hitZombie(e,Math.round(weapons[3].damage*(1-.67*d/4.35)),pos.x,e.k.scale,pos.z)}}
+    const pd=Math.hypot(player.x-x,player.y+1-y,player.z-z);if(pd<2.35)damagePlayer(Math.ceil((1-pd/2.35)*49));
+  }
+  function rocketTick(dt){for(const p of rocketPool){if(p.life<=0)continue;p.life-=dt;p.trail-=dt;const dist=dt*23;stepRay.copy(p.v);const wall=traceWall(p.m.position,stepRay,dist),hit=target(p.m.position,stepRay,wall);p.m.position.addScaledVector(stepRay,hit.dist);if(hit.found||wall<dist-.0001||p.life<=0){p.life=0;p.m.visible=false;explode(p.m.position.x,p.m.position.y,p.m.position.z);if(mode!=='playing')break}else if(p.trail<=0){p.trail=.061;particles(p.m.position.x,p.m.position.y,p.m.position.z,2,0,.43)}}}
+  function beginReload(){const w=weapons[weapon],a=loadout[weapon];if(mode!=='playing'||reload>0||a.ammo>=w.mag||a.reserve<=0)return;reload=reloadTotal=w.reload;reloadTick=false;fx('reload')}
+  function weaponsTick(dt){
+    shotWait-=dt;flashTime=Math.max(0,flashTime-dt);flash.visible=flashTime>0;kick=damp(kick,0,13,dt);
+    if(reload>0){reload-=dt;if(reload<.26&&!reloadTick){reloadTick=true;fx('reload',.65)}if(reload<=0){reload=0;const a=loadout[weapon],n=Math.min(a.reserve,weapons[weapon].mag-a.ammo);a.ammo+=n;a.reserve-=n}}
+    const w=weapons[weapon],a=loadout[weapon];const fired=w.semi?press:trigger||press;press=false;
+    if(!fired||shotWait>0||reload>0)return;
+    if(!a.ammo){shotWait=.23;fx('empty');beginReload();return}
+    a.ammo--;shotWait=w.interval;kick+=w.recoil;flashTime=.046;flash.visible=true;flash.position.set(0,.012,-w.length*.92-.069);flash.rotation.z=rand(0,6.3);fx(w.fire);
+    camera.updateMatrixWorld(true);origin.copy(camera.position);camera.getWorldDirection(aim);right.set(1,0,0).applyQuaternion(camera.quaternion);muzzle.copy(flash.position);gun.localToWorld(muzzle);
+    if(weapon===3){const p=freeSlot(rocketPool);p.life=2.6;p.trail=0;p.m.visible=true;p.v.copy(aim);p.m.quaternion.setFromUnitVectors(UP,aim);p.m.position.copy(origin).addScaledVector(aim,.23);return}
+    const sx=aim.x,sy=aim.y,sz=aim.z;
+    for(let i=0;i<(w.pellets||1);i++){
+      aim.set(sx,sy,sz).addScaledVector(right,rand(-w.spread,w.spread));aim.y+=rand(-w.spread,w.spread);aim.normalize();const wall=traceWall(origin,aim,w.range),h=target(origin,aim,wall);point.copy(origin).addScaledVector(aim,h.dist);
+      if(h.found)hitZombie(h.found,w.damage*h.mult*(weapon===1?Math.max(.38,1-h.dist*.026):1),point.x,point.y,point.z);else if(wall<w.range-.01&&i<2)particles(point.x,point.y,point.z,4,2,1.3);
+      if(i<3)tracer(muzzle,point);
+    }
+  }
+  function drawHUD(){
+    const w=weapons[weapon],a=loadout[weapon];if(!a)return;
+    hud.stationLabel.textContent=`STATION 0${station+1} / 05`;hud.waveLabel.textContent=`WAVE 0${wave} / 02`;hud.enemyLabel.textContent=String(left).padStart(2,'0');hud.hpText.textContent=Math.ceil(player.hp);hud.hpBar.style.width=`${player.hp}%`;hud.stText.textContent=Math.ceil(player.st);hud.stBar.style.width=`${player.st}%`;hud.weaponLabel.textContent=w.name;hud.ammoLabel.textContent=`${String(a.ammo).padStart(2,'0')} / ${String(a.reserve).padStart(2,'0')}`;
+    hud.reloadHUD.hidden=reload<=0;hud.reloadHUD.textContent=reload>0?`RELOADING · ${Math.max(.1,reload).toFixed(1)}S`:'';
+    hud.objective.textContent={wave:`HOLD THE PLATFORM  /  ${stations[station].toUpperCase()}`,reward:wave===1?`SUPPLIES RECEIVED  /  NEXT WAVE ${Math.ceil(timer)}S`:'STATION CLEAR  /  SUPPLIES RECEIVED',arrival:'EVAC TRAIN APPROACHING',doors:'TRAIN DOORS OPENING',board:'BOARD THROUGH THE LIT DOORS'}[phase]||'';
+    hud.interact.hidden=phase!=='board'||!insideCar();hud.interact.textContent=station===4?'[ E ]  DEPART FOR SURFACE':'[ E ]  DEPART FOR NEXT STATION';
+  }
+  function viewPlayer(){
+    const amplitude=Math.min(1,Math.hypot(player.vx,player.vz)/5),shake=hurtTime*hurtTime;
+    camera.position.set(player.x+Math.sin(walk)*.018*amplitude+rand(-1,1)*shake*.14,1.66+player.y+Math.sin(walk*2)*.024*amplitude,player.z);
+    camera.rotation.set(player.pitch+kick*.44+rand(-1,1)*shake*.095,player.yaw,(Math.sin(walk)*.008*amplitude)+rand(-1,1)*shake*.06);
+    const progress=reload>0?1-reload/reloadTotal:0,tilt=Math.sin(progress*Math.PI);
+    gun.position.set(.24+Math.sin(walk)*.025*amplitude,-.20+Math.cos(walk*2)*.017*amplitude-.24*tilt,-.365+kick*.54);
+    gun.rotation.set(kick*.75-.88*tilt,tilt*.32,tilt*.48);
+  }
+  function clearInput(){keys.clear();trigger=press=false}
+  function setPaused(){mode='paused';clearInput();$('pause').hidden=false;$('pauseText').textContent='Click Resume to recapture your mouse.';$('resume').focus()}
+  function lockError(){wantLock=false;if(mode!=='paused')return;$('pauseText').textContent='Mouse capture was blocked. Click Resume, or open index.html in its own Chrome or Edge tab.'}
+  function requestLock(){
+    if(mode!=='paused'||wantLock)return;
+    if(matchMedia('(pointer: coarse)').matches&&!matchMedia('(any-pointer: fine)').matches){$('pauseText').textContent='This game requires a keyboard and mouse. Open it on a desktop PC to continue.';return}
+    audioReady();wantLock=true;
+    try{const result=renderer.domElement.requestPointerLock();if(result?.catch)result.catch(lockError)}catch{lockError()}
+    setTimeout(()=>{if(wantLock&&!locked)lockError()},900);
+  }
+  document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;wantLock=false;if(locked&&mode==='paused'){mode='playing';$('pause').hidden=true;gun.visible=true;clearInput();viewPlayer()}else if(!locked&&mode==='playing')setPaused()});
+  document.addEventListener('pointerlockerror',lockError);
+  window.addEventListener('blur',()=>{clearInput();if(mode==='playing'){document.exitPointerLock?.();setPaused()}});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='playing'){clearInput();document.exitPointerLock?.();setPaused()}});
+  document.addEventListener('mousemove',e=>{if(!locked||mode!=='playing')return;player.yaw-=e.movementX*.00215;player.pitch=clamp(player.pitch-e.movementY*.00215,-1.40,1.40)});
+  document.addEventListener('mousedown',e=>{if(mode==='playing'&&locked&&e.button===0){trigger=press=true;e.preventDefault()}});
+  document.addEventListener('mouseup',e=>{if(e.button===0)trigger=false});
+  document.addEventListener('keydown',e=>{if(mode!=='playing')return;if(['Space','KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','KeyE','KeyR','Digit1','Digit2','Digit3','Digit4'].includes(e.code))e.preventDefault();keys.add(e.code);if(e.repeat)return;if(e.code==='Space'&&player.y===0)player.vy=5.45;if(e.code==='KeyR')beginReload();if(e.code==='KeyE')depart();if(/^Digit[1-4]$/.test(e.code)){const i=Number(e.code.at(-1))-1;if(i!==weapon)equip(i)}});
+  document.addEventListener('keyup',e=>keys.delete(e.code));
+  $('start').onclick=$('retry').onclick=startRun;$('resume').onclick=requestLock;$('quit').onclick=$('back').onclick=menu;$('start').disabled=false;gun.visible=false;
+  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();cancelAnimationFrame(frameId);if(mode==='playing'){document.exitPointerLock?.();setPaused()}$('start').disabled=$('resume').disabled=$('retry').disabled=true;$('error').hidden=false;$('error').textContent='The graphics context was lost. Reload this tab to restart.';$('pauseText').textContent=$('error').textContent});
+  renderer.domElement.addEventListener('webglcontextrestored',()=>{$('start').disabled=$('resume').disabled=$('retry').disabled=false;$('error').hidden=true;$('pauseText').textContent='Graphics restored. Click Resume to recapture your mouse.';last=performance.now();frameId=requestAnimationFrame(frame)});
+  let last=performance.now(),menuRender=-1;
+  function frame(now){
+    frameId=requestAnimationFrame(frame);const dt=clamp((now-last)*.001,0,.042);last=now;clock+=dt;
+    if(room)room.gain.setTargetAtTime(sound?((mode==='playing'||mode==='travel') ? .085 : .031):0,audioCtx.currentTime,.2);
+    if(mode==='menu'){
+      if(now-menuRender<45)return;menuRender=now;
+      camera.position.set(-3.8+Math.sin(clock*.33)*.11,1.83,15.3+Math.sin(clock*.27)*.16);camera.rotation.set(-.028,-.38+Math.sin(clock*.25)*.009,0);
+    }else if(mode==='playing'){
+      nextPosition(dt);viewPlayer();weaponsTick(dt);rocketTick(dt);if(mode==='playing'){zombieTick(dt);if(mode==='playing')stepProgress(dt)}updateEffects(dt);
+      hitTime=Math.max(0,hitTime-dt);hurtTime=Math.max(0,hurtTime-dt);hud.hurt.style.opacity=String(hurtTime*1.85);hud.crosshair.classList.toggle('hit',hitTime>0);hudTime-=dt;if(hudTime<=0){hudTime=.065;drawHUD()}
+    }else if(mode==='travel')travel(dt);
+    else if(mode==='paused'){if(now-menuRender<70)return;menuRender=now}
+    else return;
+    if(glows.length>3){const flick=Math.sin(clock*23)+Math.sin(clock*45);glows[3].visible=flick>-1.45||Math.floor(clock*4)%5!==0;if(mode==='playing'||mode==='menu')fill.intensity=.48+(flick>-.6?.14:0)}
+    renderer.render(scene,camera);
+  }
+  frameId=requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

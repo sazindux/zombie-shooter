@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Games Testing Hub</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #f8fafc;
+            --border-color: #334155;
+        }
+
+        body { 
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            overflow: hidden;
+        }
+
+        /* Top Navigation Bar */
+        .navbar { 
+            padding: 15px 30px; 
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .controls-main button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .controls-main button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        /* Workspace & Panels */
+        .workspace { 
+            display: flex; 
+            flex: 1; 
+            padding: 15px;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .panel { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            background: var(--panel-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        /* Panel Header (Controls) */
+        .panel-header { 
+            background: rgba(0, 0, 0, 0.2); 
+            padding: 12px 15px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        select { 
+            padding: 8px 12px; 
+            font-size: 14px;
+            font-weight: 500;
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            border: 1px solid var(--border-color); 
+            border-radius: 6px; 
+            width: 60%; 
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, select:hover { 
+            border-color: var(--primary); 
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: var(--border-color);
+            color: #fff;
+        }
+
+        /* Iframe */
+        .frame-container {
+            flex: 1;
+            position: relative;
+            background: #fff; /* White background for games */
+        }
+
+        iframe { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+        }
+
+        /* Single Mode CSS class */
+        .single-mode #panel2 {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="logo">✦ AI Games Testing Hub</div>
+        <div class="controls-main">
+            <button id="viewToggleBtn" onclick="toggleView()">
+                <span id="viewIcon">◫</span> <span id="viewText">Split View</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="workspace" id="workspace">
+        <!-- Panel 1 (Left / Single) -->
+        <div class="panel" id="panel1">
+            <div class="panel-header">
+                <select id="select1" onchange="updateView('1')"></select>
+                <div class="panel-actions">
+                    <button class="icon-btn" onclick="refreshFrame('1')" title="Restart Game">🔄</button>
+                    <button class="icon-btn" onclick="toggleFullscreen('1')" title="Fullscreen">⛶</button>
+                </div>
+            </div>
+            <div class="frame-container" id="container1">
+                <iframe id="frame1" src="about:blank"></iframe>
+            </div>
+        </div>
+
+        <!-- Panel 2 (Right) -->
+        <div class="panel" id="panel2">
+            <div class="panel-header">
+                <select id="select2" onchange="updateView('2')"></select>
+                <div class="panel-actions">
+                    <button class="icon-btn" onclick="refreshFrame('2')" title="Restart Game">🔄</button>
+                    <button class="icon-btn" onclick="toggleFullscreen('2')" title="Fullscreen">⛶</button>
+                </div>
+            </div>
+            <div class="frame-container" id="container2">
+                <iframe id="frame2" src="about:blank"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ගොනු ලැයිස්තුව
+        const files = [
+            "Claude Sonnet 5-5.html",
+            "Deepseek v4.1 Flash.html",
+            "Gemini 4 Argon.html",
+            "Gemini 4 Carbon.html",
+            "Gemini 4 Hydrogen.html",
+            "Gemini 4 Neon.html",
+            "Gpt 6.2 Sol.html",
+            "Muse Spark 1.3.html",
+            "Qwen 3.8.html"
+        ];
+
+        let isSingleView = false;
+
+        // Dropdown මෙනු පිරවීම
+        function initSelects() {
+            const select1 = document.getElementById('select1');
+            const select2 = document.getElementById('select2');
+
+            files.forEach((file) => {
+                select1.add(new Option(file, file));
+                select2.add(new Option(file, file));
+            });
+
+            select1.selectedIndex = 0;
+            select2.selectedIndex = 1;
+
+            updateView('1');
+            updateView('2');
+        }
+
+        // තෝරාගත් ගොනුව iframe එකට load කිරීම
+        function updateView(id) {
+            const select = document.getElementById('select' + id);
+            const frame = document.getElementById('frame' + id);
+            frame.src = encodeURI(select.value);
+        }
+
+        // Iframe එක refresh කිරීම (ගේම් එක මුල සිට පටන් ගැනීමට)
+        function refreshFrame(id) {
+            const frame = document.getElementById('frame' + id);
+            const currentSrc = frame.src;
+            frame.src = 'about:blank';
+            setTimeout(() => {
+                frame.src = currentSrc;
+            }, 50);
+        }
+
+        // Single View / Split View මාරු කිරීම
+        function toggleView() {
+            isSingleView = !isSingleView;
+            const workspace = document.getElementById('workspace');
+            const viewIcon = document.getElementById('viewIcon');
+            const viewText = document.getElementById('viewText');
+
+            if (isSingleView) {
+                workspace.classList.add('single-mode');
+                viewIcon.innerText = "🔲";
+                viewText.innerText = "Single View";
+            } else {
+                workspace.classList.remove('single-mode');
+                viewIcon.innerText = "◫";
+                viewText.innerText = "Split View";
+            }
+        }
+
+        // Fullscreen කිරීම
+        function toggleFullscreen(id) {
+            const container = document.getElementById('container' + id);
+            
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) { /* Safari */
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) { /* IE11 */
+                    container.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // පිටුව load වන විට ආරම්භ කිරීම
+        window.onload = initSelects;
+    </script>
+</body>
+</html>
